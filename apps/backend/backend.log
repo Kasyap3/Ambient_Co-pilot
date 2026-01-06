@@ -1,0 +1,49 @@
+INFO:     Started server process [18360]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+============================================================
+🤖 Ambient Copilot Backend Starting...
+============================================================
+📍 Server: http://localhost:8000
+📄 Docs: http://localhost:8000/docs
+🔑 API Key: ✅ Configured
+============================================================
+💬 Assistant: Great! You want to travel from January 12 to February 12. How many travelers will be flying?
+INFO:     127.0.0.1:52930 - "POST /assist-chat HTTP/1.1" 200 OK
+💬 Assistant: Thanks for the budget information! Just to confirm, how many travelers will be flying?
+INFO:     127.0.0.1:52932 - "POST /assist-chat HTTP/1.1" 200 OK
+💬 Assistant: Awesome, I'll fill out the form for your flight from NYC to SFO.
+INFO:     127.0.0.1:52933 - "POST /assist-chat HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'NYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=NYC.SFO
+INFO:     127.0.0.1:52993 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'NYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=NYC.SFO
+INFO:     127.0.0.1:53053 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'NYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=NYC.SFO
+INFO:     127.0.0.1:53259 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'NYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=NYC.SFO
+INFO:     127.0.0.1:53839 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_ticket
+📍 Entities: {'destination': 'Yosemite', 'other': {}}
+🔗 URL: https://www.nps.gov/yose/planyourvisit/fees.htm
+INFO:     127.0.0.1:53974 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_train
+📍 Entities: {'origin': None, 'destination': None, 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.amtrak.com
+INFO:     127.0.0.1:54422 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'MYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=MYC.SFO
+INFO:     127.0.0.1:54551 - "POST /ask HTTP/1.1" 200 OK
+✅ Action detected: book_flight
+📍 Entities: {'origin': 'MYC', 'destination': 'SFO', 'dates': None, 'budget': None, 'other': {}}
+🔗 URL: https://www.google.com/flights?hl=en#flt=MYC.SFO
+INFO:     127.0.0.1:55270 - "POST /ask HTTP/1.1" 200 OK

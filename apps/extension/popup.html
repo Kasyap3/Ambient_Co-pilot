@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>Ambient Copilot</title>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div id="agentBrain" class="neural-orb"></div>
+        <h1>Ambient Copilot</h1>
+      </div>
+      <div class="controls">
+        <button id="clearBtn" title="Clear History" class="clear-btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Typeform-style Onboarding -->
+    <div id="onboardingConfig" class="onboarding-container hidden">
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <form id="setupForm" class="step-container">
+        <!-- Step 1: Goal -->
+        <div class="step active" data-step="1">
+          <label class="question-text">What is your primary goal today?</label>
+          <div class="options-grid">
+            <div class="option-btn">📚 Research & Learning</div>
+            <div class="option-btn">🛍️ Shopping & Deals</div>
+            <div class="option-btn">👨‍💻 Coding & Dev</div>
+            <div class="option-btn">🧭 General Browsing</div>
+          </div>
+          <input type="hidden" id="goal" name="goal" required>
+        </div>
+
+        <!-- Step 2: Profession -->
+        <div class="step" data-step="2">
+          <label class="question-text">What's your profession?</label>
+          <input type="text" id="profession" name="profession" class="input-large"
+            placeholder="e.g. Engineer, Student..." autocomplete="off">
+          <div class="nav-buttons">
+            <button type="button" class="next-btn" data-next="3">Next ➝</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Interests -->
+        <div class="step" data-step="3">
+          <label class="question-text">What topics interest you?</label>
+          <input type="text" id="interests" name="interests" class="input-large" placeholder="e.g. AI, Music, Tech..."
+            autocomplete="off">
+          <div class="nav-buttons">
+            <button type="button" class="next-btn" data-next="4">Next ➝</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Detail & Tone (Combined for speed) -->
+        <div class="step" data-step="4">
+          <label class="question-text">How should I answer you?</label>
+          <div class="options-grid">
+            <div class="option-btn">⚡️ Brief & Concise</div>
+            <div class="option-btn">📖 Detailed & Explained</div>
+          </div>
+          <input type="hidden" id="detail_level" name="detail_level">
+          <input type="hidden" id="tone" name="tone" value="Professional">
+        </div>
+
+        <!-- Step 5: Advanced Features (Fake Config) -->
+        <div class="step" data-step="5">
+          <label class="question-text">Enable Advanced Modules?</label>
+
+          <div class="feature-row">
+            <div class="feature-info">
+              <h4>Deep Research Agent</h4>
+              <p>Auto-browse multiple tabs to find answers.</p>
+            </div>
+            <div class="toggle-switch active"></div>
+          </div>
+
+          <div class="feature-row">
+            <div class="feature-info">
+              <h4>Voice Synthesis</h4>
+              <p>Read summaries out loud naturally.</p>
+            </div>
+            <div class="toggle-switch active"></div>
+          </div>
+
+          <div class="nav-buttons">
+            <button type="submit" class="next-btn">Start Copilot ✨</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div id="mainChat" class="chat-container">
+      <div id="chatHistory" class="chat-history">
+        <!-- Messages appear here -->
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="chat">Chat</button>
+          <button class="tab-btn" data-tab="brain">Brain 🧠</button>
+          <button class="tab-btn" data-tab="connect">Connect 🔌</button>
+        </div>
+
+        <div id="chat-tab" class="tab-content active">
+          <div id="recommendations" class="recommendations-container hidden">
+            <div class="rec-label">Suggested Questions:</div>
+            <div id="recChips" class="rec-chips">
+              <!-- Chips will be injected here -->
+            </div>
+          </div>
+          <div id="chatHistory" class="chat-history">
+            <!-- Messages appear here -->
+          </div>
+        </div>
+
+        <div id="brain-tab" class="tab-content" style="display: none;">
+          <div class="brain-header">
+            <h3>Memory Bank</h3>
+            <button id="clearNotesBtn" class="sm-btn">Clear All</button>
+          </div>
+          <div id="notesContainer" class="notes-grid">
+            <div class="empty-state">No notes saved yet.</div>
+          </div>
+          <!-- Backend Pulse Footer -->
+          <div class="backend-pulse">
+            <div class="pulse-stat"><span class="status-dot green"></span> GPT-4o Active</div>
+            <div class="pulse-stat">Latency: <span id="latencyCalc">24ms</span></div>
+          </div>
+        </div>
+
+        <!-- Neural Sync / Connect Tab -->
+        <div id="connect-tab" class="tab-content" style="display: none;">
+          <div class="mcp-grid">
+            <!-- Gmail -->
+            <div class="mcp-card" id="mcp-gmail">
+              <div class="card-header">
+                <div class="mcp-icon">📧</div>
+                <div class="mcp-info">
+                  <div class="mcp-name">Gmail Agent</div>
+                  <div class="mcp-status">Disconnected</div>
+                </div>
+                <button class="connect-btn" data-service="gmail">Connect</button>
+              </div>
+              <div class="credential-form hidden" id="form-gmail">
+                <input type="text" placeholder="OAuth Client ID" class="mcp-input">
+                <input type="password" placeholder="Client Secret" class="mcp-input">
+                <button class="auth-btn" data-service="gmail">Authenticate & Sync</button>
+              </div>
+            </div>
+
+            <!-- Stripe -->
+            <div class="mcp-card" id="mcp-stripe">
+              <div class="card-header">
+                <div class="mcp-icon">💳</div>
+                <div class="mcp-info">
+                  <div class="mcp-name">Stripe MCP</div>
+                  <div class="mcp-status">Disconnected</div>
+                </div>
+                <button class="connect-btn" data-service="stripe">Connect</button>
+              </div>
+              <div class="credential-form hidden" id="form-stripe">
+                <input type="text" placeholder="Publishable Key (pk_live...)" class="mcp-input">
+                <input type="password" placeholder="Secret Key (sk_live...)" class="mcp-input">
+                <button class="auth-btn" data-service="stripe">Authenticate & Sync</button>
+              </div>
+            </div>
+
+            <!-- Notion -->
+            <div class="mcp-card" id="mcp-notion">
+              <div class="card-header">
+                <div class="mcp-icon">📓</div>
+                <div class="mcp-info">
+                  <div class="mcp-name">Notion Sync</div>
+                  <div class="mcp-status">Disconnected</div>
+                </div>
+                <button class="connect-btn" data-service="notion">Connect</button>
+              </div>
+              <div class="credential-form hidden" id="form-notion">
+                <input type="password" placeholder="Integration Token (secret_...)" class="mcp-input">
+                <button class="auth-btn" data-service="notion">Authenticate & Sync</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminal Log -->
+          <div id="neural-terminal" class="neural-terminal hidden">
+            <div class="terminal-header">_NEURAL_SYNC_LOG //</div>
+            <div id="terminal-content" class="terminal-content"></div>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="input-area">
+        <textarea id="userInput" placeholder="Ask me anything about this page, or click 🎤 to speak..."
+          rows="2"></textarea>
+        <div class="button-row">
+          <button id="sendBtn" class="send-btn">Send</button>
+          <button id="micBtn" class="mic-btn" title="Click to start voice input">🎤</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

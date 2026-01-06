@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Ambient Copilot",
+  "version": "1.0.0",
+  "description": "Context-aware browsing assistant with voice input",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ambient Copilot"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js",
+        "floating-assistant.js"
+      ],
+      "css": [
+        "floating-assistant.css"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -1,0 +1,15 @@
+# Ambient Copilot - Auto-saved Notes
+# Format: [YYYY-MM-DD HH:MM:SS] Page Title: Note content
+
+[2026-01-05 18:59:58] Kasyap-Cover Letter - Online LaTeX Editor Overleaf: Kasyap has hands-on experience with advanced prompt engineering and multi-agent systems.
+[2026-01-05 19:08:12] Example Page: If you're planning a visit to Yosemite, consider what activities interest you most to get the best out of your experience.
+[2026-01-05 19:21:38] Kasyap-Cover Letter - Online LaTeX Editor Overleaf: User is looking for a flight from NYC to SFO.
+[2026-01-05 19:22:13] Kasyap-Cover Letter - Online LaTeX Editor Overleaf: User is looking for a round trip flight from NYC to SFO with a budget of around $1000, traveling between January 12 and February 12.
+[2026-01-05 20:27:46] Kasyap-Cover Letter - Online LaTeX Editor Overleaf: If you have a specific format or style in mind for your cover letter, I can help you find templates or examples.
+[2026-01-05 20:51:21] Directory | Y Combinator's Work at a Startup: Emerge AI seems to be aligned with your interests in AI and engineering.
+[2026-01-05 20:57:00] Directory | Y Combinator's Work at a Startup: Exploring the filter options might help you find positions that specifically match your skills and interests in AI within the startup ecosystem.
+[2026-01-05 21:00:06] Directory | Y Combinator's Work at a Startup: A.P.J. Abdul Kalam is a significant figure in India's scientific and educational landscape, inspiring many young engineers and innovators.
+[2026-01-05 21:09:02] Find Cheap Flights Worldwide & Book Your Ticket - Google Flights: Understanding your goal is to shop for flights as a student, I can help you find budget-friendly options if you need.
+[2026-01-05 21:36:11] Find Cheap Flights from San Francisco to New York - Google Flights: The cheapest month to fly is February, which might benefit budget-conscious travelers.
+[2026-01-05 21:57:24] Directory | Y Combinator's Work at a Startup: This platform is geared towards job seekers looking to work at startups, particularly those associated with Y Combinator.
+[2026-01-05 21:58:51] Directory | Y Combinator's Work at a Startup: This platform focuses on connecting job seekers with startups, highlighting the importance of equity and salary considerations in job searches.
