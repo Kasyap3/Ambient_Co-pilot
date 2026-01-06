@@ -18,6 +18,53 @@ The system operates on a split-stack architecture designed to mimic human cognit
     *   **Ghost Hand Auto-Pilot**: The backend transmits coordinate-based navigation commands to the frontend, which simulates a virtual cursor to physically scroll to and click elements on the user's behalf.
     *   **Smart Select**: Context-aware analysis is triggered immediately upon text selection, bypassing the need for manual copy-pasting.
 
+### System Diagram
+
+```mermaid
+graph TD
+    %% Styling
+    classDef frontend fill:#e3f2fd,stroke:#2196f3,stroke-width:2px;
+    classDef backend fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px;
+    classDef ai fill:#fff3e0,stroke:#ff9800,stroke-width:2px;
+    classDef storage fill:#e8f5e9,stroke:#4caf50,stroke-width:2px;
+
+    subgraph "Perception & Action (Browser Extension)"
+        UI[User Interface]:::frontend -->|Prompts/Voice| Signal[Intent Signals]
+        DOM[DOM Observer]:::frontend -->|Text/Forms| Signal
+        GH[Ghost Hand Renderer]:::frontend -->|Clicks/Scrolls| DOM
+        Highlight[Visual Highlighter]:::frontend -->|Yellow Overlay| DOM
+    end
+
+    Signal -->|JSON Payload| API[FastAPI Orchestrator]:::backend
+
+    subgraph "Cognitive Core (Python Backend)"
+        API -->|Context| Router{Intent Router}:::backend
+        
+        subgraph "Reasoning & RAG"
+            Router -->|Query| VDB[(Vector Memory)]:::storage
+            VDB -->|Retrieved Chunks| Context[Context Window]
+            Context -->|Augmented Prompt| LLM[LLM Inference]:::ai
+        end
+
+        subgraph "Tool Use & Validation"
+            LLM -->|Tool Call| ToolRunner[Tool Executor]:::backend
+            ToolRunner -->|Navigate| NavAction[Navigation Logic]
+            ToolRunner -->|Draft| MailAction[Email Composer]
+            ToolRunner -->|Analyze| InsightAction[Data Analyzer]
+        end
+    end
+
+    %% Feedback Loops
+    LLM -->|Response + Citations| API
+    NavAction -->|Coordinates| GH
+    API -->|Render Message| UI
+    API -->|Trigger Highlight| Highlight
+
+    %% External
+    ToolRunner -.->|MCP Protocol| ExtServices[Stripe / Notion / Gmail]
+```
+
+
 ## Core Features
 
 *   **Contextual Chat Interface**: A persistent, sidebar-style chat window that maintains conversation history and context awareness across different browsing sessions, enabling continuous assistance.
