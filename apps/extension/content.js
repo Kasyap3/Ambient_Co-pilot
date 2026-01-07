@@ -35,8 +35,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     executeAgentNavigation(request.target, request.direction);
   }
 
+  if (request.action === 'trigger_magic_fill_direct') {
+    // Directly trigger the first detected form as a shortcut
+    const forms = document.querySelectorAll('form');
+    if (forms.length > 0) {
+      const firstForm = forms[0];
+      console.log('🤖 Auto-filling form directly from Blueprint...');
+      performMagicFill(firstForm);
+    }
+  }
+
   return true; // Keep message channel open for async response
 });
+
+async function performMagicFill(form) {
+  // Qualifying fields for fill
+  const fields = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+
+  for (const field of fields) {
+    // Scroll to element
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Premium Highlight effect
+    const originalBorder = field.style.border;
+    const originalShadow = field.style.boxShadow;
+    field.style.border = '2px solid #0ea5e9';
+    field.style.boxShadow = '0 0 15px rgba(14, 165, 233, 0.6)';
+    field.style.backgroundColor = 'rgba(14, 165, 233, 0.05)';
+
+    // Value Synthesis (Simulated profile data)
+    let val = field.placeholder || field.name || 'Sample Analysis';
+    if (field.type === 'email') val = 'user@example.com';
+    if (field.type === 'tel') val = '+1-555-0199';
+
+    // Typewriter simulation
+    field.value = `[Neural] ${val}`;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Wait a bit per field for "Agent" feel
+    await new Promise(r => setTimeout(r, 450));
+
+    // Remove highlight
+    field.style.border = originalBorder;
+    field.style.boxShadow = originalShadow;
+    field.style.backgroundColor = '';
+  }
+}
 
 // Proactive Form Detection
 function detectForms() {
@@ -53,60 +98,15 @@ function detectForms() {
     // Inject Magic Button
     injectMagicButton(form);
     magicButtons.add(form);
+
+    // Global Signal
+    chrome.runtime.sendMessage({ action: 'FORM_DETECTED', details: { id: form.id || 'anonymous_form' } });
   });
 }
 
-function injectMagicButton(form) {
-  // Create button container (relative to form)
-  const container = document.createElement('div');
-  container.className = 'ambient-magic-btn-container';
-  container.style.cssText = 'position: absolute; top: -10px; right: 10px; z-index: 10000;';
-
-  // Ensure form is relative so we can position absolute
-  const formStyle = window.getComputedStyle(form);
-  if (formStyle.position === 'static') {
-    form.style.position = 'relative';
-  }
-
-  const btn = document.createElement('button');
-  btn.className = 'ambient-magic-btn';
-  btn.innerHTML = '✨ Fill with Copilot';
-  btn.title = 'Auto-fill this form using your profile';
-
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Identify fields to send to assistant context
-    const fieldData = Array.from(form.querySelectorAll('input, select, textarea')).map(f => ({
-      name: f.name || f.id || '',
-      label: getLabelForField(f),
-      type: f.type || f.tagName.toLowerCase()
-    }));
-
-    // Trigger floating assistant logic
-    chrome.runtime.sendMessage({
-      action: 'trigger_magic_fill',
-      formContext: {
-        url: window.location.href,
-        fields: fieldData
-      }
-    });
-
-    // Provide immediate feedback on button
-    btn.innerHTML = '🔄 Working...';
-    btn.disabled = true;
-
-    // Reset button after a delay (or when finished)
-    setTimeout(() => {
-      btn.innerHTML = '✨ Fill with Copilot';
-      btn.disabled = false;
-    }, 5000);
-  });
-
-  container.appendChild(btn);
-  form.insertBefore(container, form.firstChild);
-}
+// UI Injections Disabled - Discovery signals only
+function injectMagicButton(form) { }
+function showSparkleButton(x, y, text) { }
 
 function getLabelForField(field) {
   // 1. Check for label tag
@@ -122,23 +122,16 @@ function getLabelForField(field) {
 }
 
 // Run detection
-detectForms();
+// detectForms(); // Disabled to avoid page clutter; moved to Sidebar Blueprints
 
-// Auto-Re-open Logic
+// Auto-Re-open Logic (Disabled: Moved to Side Panel)
+/*
 chrome.storage.local.get(['assistant_active'], (data) => {
   if (data.assistant_active) {
-    console.log('🔄 persistent session detected, re-opening assistant...');
-    // Small delay to ensure all scripts are ready
-    setTimeout(() => {
-      if (window.createFloatingAssistant) {
-        window.createFloatingAssistant(
-          "Welcome back! I'm still here to help with this page. 🦾",
-          { type: 'resume', url: window.location.href }
-        );
-      }
-    }, 1000);
+    ...
   }
 });
+*/
 
 
 // --- Smart Select Feature ---
@@ -160,6 +153,10 @@ function handleSelection(e) {
 
     // Minimum length check (ignore accidental clicks)
     if (selectedText.length < 5) return;
+
+    // Send Signal
+    console.log('📡 Sending SELECTION_DETECTED for:', selectedText);
+    chrome.runtime.sendMessage({ action: 'SELECTION_DETECTED', text: selectedText });
 
     // Ignore selections inside the assistant or magic buttons itself
     if (e.target.closest('.ambient-floating-assistant') || e.target.closest('.ambient-magic-btn')) return;
@@ -191,28 +188,23 @@ function showSparkleButton(x, y, text) {
     position: 'absolute',
     left: `${x + 8}px`,
     top: `${y - 40}px`,
-    zIndex: '2147483647', // Max z-index
+    zIndex: '2147483647',
     padding: '6px 12px',
-    fontSize: '12px'
+    fontSize: '12px',
+    background: '#0ea5e9',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
   });
 
-  // Use mousedown to prevent losing selection focus before click
   sparkleBtn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('✨ Smart Select Triggered');
-
-    // Check for Floating Assistant availability
-    if (window.createFloatingAssistant) {
-      window.createFloatingAssistant(
-        `Analyze and explain this context:\n"${text}"`,
-        { type: 'selection', text: text, url: window.location.href }
-      );
-    } else {
-      console.warn('Floating assistant script not found on window');
-      alert('Ambient Copilot: Assistant script not ready yet.');
-    }
+    // Send Signal directly to Side Panel
+    chrome.runtime.sendMessage({ action: 'SELECTION_DETECTED', text: text });
 
     // Cleanup
     sparkleBtn.remove();
@@ -227,39 +219,48 @@ function showSparkleButton(x, y, text) {
 // --- Agentic Utils (Highlights & Ghost Cursor) ---
 
 function highlightTextOnPage(snippet) {
-  // Basic text search and highlight
-  // Note: robust text finding in DOM is complex; using a simplified approach
-  const finder = window.find(snippet);
+  if (!snippet) return;
+  console.log('🔦 Attempting highlight for:', snippet);
 
-  if (finder) {
+  // 1. Try exact find
+  let found = window.find(snippet, false, false, true);
+
+  // 2. Fallback: Try a shorter version if it's too long
+  if (!found && snippet.length > 50) {
+    const shorter = snippet.substring(0, 50);
+    console.log('🔦 Retrying with shorter snippet:', shorter);
+    found = window.find(shorter, false, false, true);
+  }
+
+  if (found) {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
 
-      // Create highlight span
       const span = document.createElement('span');
-      span.style.backgroundColor = 'rgba(255, 255, 0, 0.5)';
-      span.style.transition = 'background-color 1s ease-out';
-      span.style.borderRadius = '4px';
+      span.style.backgroundColor = 'rgba(14, 165, 233, 0.25)';
+      span.style.borderBottom = '3px solid #0ea5e9';
+      span.style.boxShadow = '0 0 15px rgba(14, 165, 233, 0.4)';
+      span.style.transition = 'all 1.2s ease-out';
+      span.style.borderRadius = '2px';
+      span.style.padding = '2px 0';
+      span.id = 'ambient-active-highlight';
 
       try {
         range.surroundContents(span);
-
-        // Scroll into view
         span.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        // Fade out
         setTimeout(() => {
           span.style.backgroundColor = 'transparent';
-          // Optional: remove span tag but keep text? 
-          // Keeping simple for now
-        }, 3000);
+          span.style.boxShadow = 'none';
+          span.style.borderBottomColor = 'transparent';
+        }, 4000);
       } catch (e) {
-        console.warn('Could not highlight range:', e);
+        console.warn('Highlight range error:', e);
       }
     }
   } else {
-    console.log('Text snippet not found for highlight:', snippet);
+    console.warn('❌ Text snippet not found on page.');
   }
 }
 

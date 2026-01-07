@@ -64,16 +64,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ Failed to attach core listeners:', e);
   }
 
+  // Hub Actions
+  const hubExecuteBtn = document.getElementById('hubExecuteBtn');
+  if (hubExecuteBtn) {
+    hubExecuteBtn.addEventListener('click', () => {
+      const actionText = document.getElementById('hubActionText').textContent;
+      if (actionText.includes('Form Detected')) {
+        executeFormBlueprint();
+      } else {
+        handleSend(); // Fallback to current input
+      }
+    });
+  }
+
+  const hubCloseBtn = document.getElementById('hubCloseBtn');
+  if (hubCloseBtn) {
+    hubCloseBtn.addEventListener('click', () => {
+      document.getElementById('actionHub').classList.add('hidden');
+    });
+  }
+
   // Tab handling
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view-pane').forEach(c => c.style.display = 'none');
-      btn.classList.add('active');
-      const tabId = btn.dataset.tab;
-      const content = document.getElementById(`${tabId}-tab`);
-      if (content) content.style.display = 'flex';
-      if (tabId === 'brain') renderNotes();
+      switchTab(btn.dataset.tab);
     });
   });
 
@@ -83,12 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const memorySearch = document.getElementById('memorySearch');
   if (memorySearch) {
     memorySearch.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      const cards = document.querySelectorAll('.note-card');
-      cards.forEach(card => {
-        const text = card.querySelector('.note-content').textContent.toLowerCase();
-        card.style.display = text.includes(query) ? 'flex' : 'none';
-      });
+      renderNotes(e.target.value.toLowerCase());
     });
   }
 
@@ -125,8 +134,100 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Initial analysis failed:', e);
   }
 
+  // Listen for background discoveries
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.action === 'FORM_DETECTED') {
+      showActionBadge();
+      injectFormBlueprint();
+    }
+    if (msg.action === 'SELECTION_DETECTED') {
+      console.log('🎯 Selection received in Sidebar:', msg.text);
+      showActionBadge();
+      const input = document.getElementById('userInput');
+      if (input) {
+        input.value = `Explain this context: "${msg.text}"`;
+        switchTab('chat');
+        // Small delay to ensure UI state is stable
+        setTimeout(() => handleSend(), 100);
+      }
+    }
+    if (msg.action === 'show_insight_popup') {
+      addMessage(`💡 **Insight Target**: ${msg.insight}`, 'assistant');
+    }
+  });
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view-pane').forEach(c => c.style.display = 'none');
+
+    const btn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
+    const content = document.getElementById(`${tabId}-tab`);
+
+    if (btn) btn.classList.add('active');
+    if (content) content.style.display = 'flex';
+
+    if (tabId === 'brain') renderNotes();
+    if (tabId === 'notes') renderSiteNotes();
+  }
+
   setStatus('Ready');
+
+  // Orb Interactivity (Signal Discovery via Hub)
+  const orb = document.getElementById('vibeOrb');
+  if (orb) {
+    orb.title = "Neural Status: Active Discovery";
+    orb.addEventListener('click', () => {
+      if (orb.classList.contains('action-detected')) {
+        const hub = document.getElementById('actionHub');
+        if (hub) {
+          hub.classList.remove('hidden');
+          addMessage("🔍 **Intelligence Link**: I've synchronized the discovery. Use the **Action Hub** above to execute the automation.", 'assistant');
+        }
+      } else {
+        addMessage("✨ **Orb Intelligence**: I am currently monitoring the page for proactive insights and automation opportunities.", 'assistant');
+      }
+    });
+  }
 });
+
+function showActionBadge() {
+  const orb = document.getElementById('vibeOrb');
+  if (orb) {
+    orb.classList.add('action-detected');
+    orb.title = "Action Detected! Click for details.";
+  }
+}
+
+function injectFormBlueprint() {
+  const hub = document.getElementById('actionHub');
+  const hubText = document.getElementById('hubActionText');
+  if (hub && hubText) {
+    hubText.textContent = "Form Discovery: Intelligent Fill Ready";
+    hub.classList.remove('hidden');
+  }
+}
+
+async function executeFormBlueprint() {
+  const hub = document.getElementById('actionHub');
+  const btn = document.getElementById('hubExecuteBtn');
+  btn.disabled = true;
+  btn.textContent = 'RUNNING';
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'trigger_magic_fill_direct' });
+    }
+  });
+
+  setTimeout(() => {
+    hub.classList.add('hidden');
+    btn.disabled = false;
+    btn.textContent = 'RUN';
+    addMessage("✅ Rapid Form Entry sequence complete.", 'assistant');
+    const orb = document.getElementById('vibeOrb');
+    if (orb) orb.classList.remove('action-detected');
+  }, 2000);
+}
 
 function initNeuralConnectivity() {
   console.log('🧠 Neural Connectivity Initialized');
@@ -404,17 +505,25 @@ function updateBlueprintConsole(blueprint) {
     btn.disabled = true;
     btn.textContent = 'RUNNING...';
 
-    // Step 1
-    status.textContent = 'Step 1: Analyzing context...';
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Step 2
-    status.textContent = 'Step 2: Syncing to memory...';
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Step 3
-    status.textContent = 'Step 3: Finalizing report...';
+    // Step 1: Context Analysis
+    status.textContent = 'Step 1: Analyzing form fields...';
     await new Promise(r => setTimeout(r, 1000));
+
+    // Step 2: Form Synthesis
+    status.textContent = 'Step 2: Synthesizing data...';
+    if (blueprint.name === "Rapid Form Entry") {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          // Trigger actual fill logic in content script
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'trigger_magic_fill_direct' });
+        }
+      });
+    }
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Step 3: Deployment
+    status.textContent = 'Step 3: Deploying values...';
+    await new Promise(r => setTimeout(r, 800));
 
     status.textContent = 'Blueprint Complete';
     btn.textContent = 'DONE';
@@ -422,6 +531,9 @@ function updateBlueprintConsole(blueprint) {
     setTimeout(() => {
       btn.disabled = false;
       btn.textContent = 'RE-RUN';
+      status.textContent = 'Ready';
+      const orb = document.getElementById('vibeOrb');
+      if (orb) orb.classList.remove('action-detected'); // Clear badge
     }, 2000);
   });
 }
@@ -435,8 +547,15 @@ function updateVisionTicker(entities) {
   entities.forEach(entity => {
     const item = document.createElement('div');
     item.className = 'ticker-item';
-    item.innerHTML = `<span class="label">${entity.label}:</span> ${entity.value}`;
+    item.innerHTML = `<strong>${entity.label}:</strong> ${entity.value}`;
     tickerContent.appendChild(item);
+
+    // Mixed Reality: Highlight fact on page
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'highlight_text', text: entity.value });
+      }
+    });
   });
 
   // Duplicate content for seamless loop
@@ -580,11 +699,13 @@ async function handleSend() {
     console.log('🎯 Action in response?', data.action);
 
     // Handle actions (open tabs, navigate, etc.)
-    if (data.action) {
-      console.log('✅ Calling handleAction with:', data.action);
-      handleAction(data.action);
+    const agentAction = data.action || data;
+    const actionType = agentAction.action_type || agentAction.type;
+    if (agentAction && actionType) {
+      console.log('✅ Calling handleAction with:', agentAction);
+      handleAction(agentAction);
     } else {
-      console.log('⚠️ No action in response');
+      console.log('⚠️ No recognized action in response');
     }
 
     // Add assistant response with animation
@@ -922,6 +1043,69 @@ async function handleAction(action) {
       console.error('Navigation failed:', e);
     }
   }
+  // --- Legacy Rescue: Save Note ---
+  else if (action.type === 'save_note' && action.entities && action.entities.note_content) {
+    const note = action.entities.note_content;
+    addMessage('💾 Saving note to your Memory Bank...', 'assistant');
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      // Save to Backend (Persistence)
+      await fetch('http://localhost:8000/assist-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_message: `save this note: ${note}`,
+          page_info: { title: tab.title, url: tab.url },
+          context: { action: { type: 'save_note', entities: { note_content: note } } }
+        })
+      });
+
+      // Save to Local (Legacy Archive)
+      const stored = await chrome.storage.local.get(['memory']);
+      const memory = stored.memory || { preferences: [], notes: [] };
+
+      const newNote = {
+        text: note,
+        url: tab.url,
+        title: tab.title,
+        icon: tab.favIconUrl || '',
+        timestamp: Date.now()
+      };
+
+      if (!memory.notes.some(n => (n.text === note || n === note))) {
+        memory.notes.push(newNote);
+        if (memory.notes.length > 50) memory.notes.shift();
+        await chrome.storage.local.set({ memory });
+        addMessage('✅ Note saved! You can view it in the "Brain" and "Notes" tabs.', 'assistant');
+        renderNotes();
+        renderSiteNotes();
+      }
+    } catch (e) {
+      console.error('Error saving note:', e);
+      addMessage('❌ Failed to save note.', 'assistant');
+    }
+  }
+  // --- Highlight Text on Page ---
+  else if (action.type === 'highlight_text' || action.action_type === 'highlight_text') {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        const snippet = action.entities?.highlight_snippet || action.highlight_snippet || action.text;
+        console.log('🔦 Highlighting snippet:', snippet);
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'highlight_text',
+          text: snippet
+        });
+        if (action.message || action.simple_message) {
+          setStatus(action.message || action.simple_message, 'success');
+        }
+      }
+    } catch (e) {
+      console.error('Highlight failed:', e);
+    }
+  }
 }
 
 async function getStoredPreferences() {
@@ -1132,33 +1316,83 @@ function handleRecClick(question) {
   // document.getElementById('recommendations').classList.add('hidden');
 }
 
-async function renderNotes() {
+async function renderNotes(filter = '') {
   const container = document.getElementById('notesContainer');
   const stored = await chrome.storage.local.get(['memory']);
-  const notes = stored.memory?.notes || [];
+  let notes = stored.memory?.notes || [];
+
+  if (filter) {
+    notes = notes.filter(n => {
+      const text = typeof n === 'object' ? n.text : n;
+      return text.toLowerCase().includes(filter);
+    });
+  }
 
   container.innerHTML = '';
 
   if (notes.length === 0) {
-    container.innerHTML = '<div class="empty-state">No notes saved yet. Ask me to save one!</div>';
+    container.innerHTML = '<div class="empty-state">No archive records found.</div>';
     return;
   }
 
   notes.slice().reverse().forEach((note, index) => {
-    const actualIndex = notes.length - 1 - index;
+    const noteText = typeof note === 'object' ? note.text : note;
     const div = document.createElement('div');
     div.className = 'note-card';
     div.innerHTML = `
-            <div class="note-content" id="note-text-${actualIndex}">${note}</div>
+            <div class="note-content">${noteText}</div>
             <div class="note-actions">
-                <button onclick="startEditingNote(${actualIndex})" class="note-btn" title="Edit">✏️</button>
-                <button onclick="deleteNote(${actualIndex})" class="note-btn delete" title="Delete">🗑️</button>
+                <button onclick="deleteNote(${notes.length - 1 - index})" class="note-btn delete">🗑️</button>
             </div>
-            <span class="note-date">Saved recently</span>
         `;
     container.appendChild(div);
   });
 }
+
+async function renderSiteNotes() {
+  const container = document.getElementById('siteNotesContainer');
+  container.innerHTML = '<div class="loading">Loading Notebook...</div>';
+
+  try {
+    const response = await fetch('http://localhost:8000/notes');
+    if (!response.ok) throw new Error(`Status: ${response.status}`);
+    const notes = await response.json();
+
+    container.innerHTML = '';
+    if (notes.length === 0) {
+      container.innerHTML = '<div class="empty-state">No site-anchored notes yet. Save a note to begin.</div>';
+      return;
+    }
+
+    notes.forEach((note, index) => {
+      const div = document.createElement('div');
+      div.className = 'site-note-card';
+      div.innerHTML = `
+                <div class="site-meta">
+                    <span class="site-tag">CITING SOURCE</span>
+                    <span class="site-domain">${note.page_title}</span>
+                </div>
+                <div class="note-text">${note.note}</div>
+                <div class="note-footer">
+                    <span class="note-time">${note.timestamp}</span>
+                    <button onclick="removeBackendNote(${index})" class="note-trash-btn">🗑️</button>
+                </div>
+            `;
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error('❌ Notebook fetch failed:', e);
+    container.innerHTML = `<div class="empty-state">Backend Error: ${e.message}</div>`;
+    // Fallback to local
+  }
+}
+
+window.removeBackendNote = async function (index) {
+  if (confirm('Permanently delete this note from the archive?')) {
+    await fetch(`http://localhost:8000/notes/${index}`, { method: 'DELETE' });
+    renderSiteNotes();
+  }
+};
 
 async function deleteNote(index) {
   const stored = await chrome.storage.local.get(['memory']);

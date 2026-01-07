@@ -25,12 +25,9 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js",
-        "floating-assistant.js"
+        "content.js"
       ],
-      "css": [
-        "floating-assistant.css"
-      ]
+      "css": []
     }
   ],
   "background": {

@@ -61,9 +61,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.insight && sender.tab) {
-          chrome.tabs.sendMessage(sender.tab.id, {
-            action: 'show_insight',
+        if (data.insight) {
+          // Send to the popup/sidepanel instead of the floating assistant
+          chrome.runtime.sendMessage({
+            action: 'show_insight_popup',
             insight: data.insight
           });
         }

@@ -13,7 +13,7 @@ load_dotenv()
 
 # Import local modules
 from memory import extract_preferences
-from notes import save_note
+from notes import save_note, get_all_notes, delete_note, clear_notes
 from prompts import build_context_prompt
 from summarizer import summarize_text
 from actions import detect_action
@@ -38,7 +38,7 @@ class Message(BaseModel):
 
 class Memory(BaseModel):
     preferences: List[str]
-    notes: List[str]
+    notes: List[dict]
 
 class AskRequest(BaseModel):
     user_input: str
@@ -56,6 +56,23 @@ async def root():
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat()
     }
+
+@app.get("/notes")
+async def fetch_notes():
+    """Fetch all saved notes from the backend"""
+    return get_all_notes()
+
+@app.delete("/notes/{index}")
+async def remove_note(index: int):
+    """Delete a note by its index"""
+    success = delete_note(index)
+    return {"status": "success" if success else "error"}
+
+@app.delete("/notes-clear")
+async def wipe_notes():
+    """Clear all notes"""
+    clear_notes()
+    return {"status": "success"}
 
 @app.post("/ask")
 async def ask(request: AskRequest):
@@ -97,7 +114,8 @@ async def ask(request: AskRequest):
                 "action": {
                     "type": action['action_type'],
                     "url": action['url'],
-                    "proactive_message": action.get('proactive_message')
+                    "proactive_message": action.get('proactive_message'),
+                    "entities": action.get('entities')
                 }
             }
         
@@ -447,15 +465,6 @@ async def generate_insights(request: RecommendationRequest):
         # Build prompt
 
 
-@app.get("/health")
-async def health():
-    """Detailed health check"""
-    api_key = os.getenv("OPENAI_API_KEY")
-    return {
-        "status": "healthy",
-        "openai_key_configured": bool(api_key and api_key.startswith("sk-")),
-        "timestamp": datetime.now().isoformat()
-    }
 
 @app.post("/assist-chat")
 async def assist_chat(request: dict):

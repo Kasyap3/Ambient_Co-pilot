@@ -23,11 +23,12 @@ Analyze the user's input and conversation history to:
 Respond ONLY with valid JSON in this exact format:
 {
   "action_detected": true/false,
-  "action_type": "open_url" or "save_note" or "navigate_page" or null,
-  "intent": "book_flight", "draft_email", "save_note", "scroll_to", "click_element" etc.,
+  "action_type": "open_url" or "save_note" or "navigate_page" or "highlight_text" or null,
+  "intent": "book_flight", "draft_email", "save_note", "scroll_to", "highlight_fact" etc.,
   "entities": {
     "origin": "NYC",
     "target_text": "Pricing" (for navigation),
+    "highlight_snippet": "The total is $500",
     "scroll_direction": "down" or "up" or null,
     "email_recipient": "boss@example.com",
     "note_content": "The camera costs $500...",
@@ -68,8 +69,20 @@ Response:
   "url": null,
   "simple_message": "Saving note...",
   "proactive_message": "I've saved that to your memory bank! 🧠"
-}  "simple_message": "brief opening message",
-  "proactive_message": "detailed contextual message for floating assistant"
+User: "Explain this section"
+Context: Selected text "The quick brown fox..."
+Response:
+{
+  "action_detected": true,
+  "action_type": "highlight_text",
+  "intent": "highlight_fact",
+  "entities": {
+    "highlight_snippet": "The quick brown fox",
+    "other": {}
+  },
+  "url": null,
+  "simple_message": "Analyzing the selection...",
+  "proactive_message": "I'm highlighting the section you're interested in! ✨"
 }
 
 Examples:

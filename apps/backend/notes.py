@@ -76,6 +76,34 @@ def get_recent_notes(n: int = 10) -> list:
         print(f"❌ Error reading notes: {e}")
         return []
 
+def get_all_notes() -> list:
+    """Get all notes from the file"""
+    return get_recent_notes(n=1000)
+
+def delete_note(index: int):
+    """Delete a note by its index in reversed order list"""
+    ensure_data_dir()
+    try:
+        with open(NOTES_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        
+        # Since get_recent_notes returns reversed, we need to map the index
+        # Actually, simpler to just filter empty lines and re-write
+        valid_lines = [l for l in lines if l.strip()]
+        
+        if 0 <= index < len(valid_lines):
+            # Map index from UI (reversed) to actual line index
+            actual_index = len(valid_lines) - 1 - index
+            valid_lines.pop(actual_index)
+            
+            with open(NOTES_FILE, "w", encoding="utf-8") as f:
+                f.writelines(valid_lines)
+            return True
+        return False
+    except Exception as e:
+        print(f"❌ Error deleting note: {e}")
+        return False
+
 def clear_notes():
     """Clear all notes (for testing)"""
     ensure_data_dir()

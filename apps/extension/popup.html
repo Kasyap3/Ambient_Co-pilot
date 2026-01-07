@@ -32,8 +32,9 @@
     <!-- Navigation -->
     <nav class="glass-nav">
       <button class="nav-btn active" data-tab="chat">Chat</button>
-      <button class="nav-btn" data-tab="brain">Memory</button>
+      <button class="nav-btn" data-tab="brain">Brain</button>
       <button class="nav-btn" data-tab="connect">Systems</button>
+      <button class="nav-btn" data-tab="notes">Notes</button>
     </nav>
 
     <!-- Content Area -->
@@ -50,13 +51,23 @@
 
       <div id="brain-tab" class="view-pane" style="display: none;">
         <div class="pane-header">
-          <h3>Memory Core</h3>
+          <h3>Neural Archive</h3>
           <div class="memory-search-box">
-            <input type="text" id="memorySearch" placeholder="Filter memories..." class="nano-input">
+            <input type="text" id="memorySearch" placeholder="Search archive..." class="nano-input">
           </div>
-          <button id="clearNotesBtn" class="action-btn-text">Flush Cache</button>
+          <button id="clearNotesBtn" class="action-btn-text">Clear</button>
         </div>
         <div id="notesContainer" class="notes-mesh"></div>
+      </div>
+
+      <div id="notes-tab" class="view-pane" style="display: none;">
+        <div class="pane-header">
+          <h3>Site Notebook</h3>
+          <p class="pane-sub">Notes anchored to your browsing context.</p>
+        </div>
+        <div id="siteNotesContainer" class="site-notes-list">
+          <div class="empty-state">No context-aware notes yet.</div>
+        </div>
       </div>
 
       <div id="connect-tab" class="view-pane" style="display: none;">
@@ -113,8 +124,8 @@
       </div>
     </main>
 
-    <!-- Autonomous Blueprint Console -->
-    <section id="workflowConsole" class="workflow-hub">
+    <!-- Autonomous Blueprint Console (Managed via Action Hub) -->
+    <section id="workflowConsole" class="workflow-hub hidden">
       <div class="workflow-header">
         <div class="discovery-pulse" id="blueprintPulse"></div>
         <h4>Autonomous <span>Blueprints</span></h4>
@@ -137,6 +148,16 @@
         <span class="mcp-count">⚡️ <span id="mcpCount">3</span> Tools</span>
       </div>
     </footer>
+
+    <!-- Dynamic Action Hub: Center of Discovery -->
+    <section id="actionHub" class="action-hub hidden">
+      <div class="hub-chip" id="discoveryChip">
+        <span class="hub-icon">🪄</span>
+        <span class="hub-text" id="hubActionText">Analyzing Page...</span>
+        <button class="hub-execute" id="hubExecuteBtn">RUN</button>
+        <button class="hub-close" id="hubCloseBtn">×</button>
+      </div>
+    </section>
 
     <!-- Global Interaction Area -->
     <section class="interaction-node">
