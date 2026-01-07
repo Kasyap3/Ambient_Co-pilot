@@ -12,6 +12,14 @@ let isRecording = false;
 try {
   console.log('🚀 Starting floating-assistant.js initialization...');
 
+  window.removeFloatingAssistant = function () {
+    if (assistantContainer) {
+      assistantContainer.remove();
+      assistantContainer = null;
+      chrome.storage.local.set({ assistant_active: false });
+    }
+  }
+
   window.createFloatingAssistant = function (initialMessage, context) {
     console.log('📝 createFloatingAssistant called with message:', initialMessage);
     removeFloatingAssistant();
@@ -53,6 +61,9 @@ try {
     document.body.appendChild(assistantContainer);
     console.log('✅ Assistant appended successfully!');
     console.log('🎨 Assistant element:', assistantContainer);
+
+    // Set active flag
+    chrome.storage.local.set({ assistant_active: true });
 
     // Fetch proactive insights
     fetchInsights(assistantContainer);

@@ -124,6 +124,22 @@ function getLabelForField(field) {
 // Run detection
 detectForms();
 
+// Auto-Re-open Logic
+chrome.storage.local.get(['assistant_active'], (data) => {
+  if (data.assistant_active) {
+    console.log('🔄 persistent session detected, re-opening assistant...');
+    // Small delay to ensure all scripts are ready
+    setTimeout(() => {
+      if (window.createFloatingAssistant) {
+        window.createFloatingAssistant(
+          "Welcome back! I'm still here to help with this page. 🦾",
+          { type: 'resume', url: window.location.href }
+        );
+      }
+    }, 1000);
+  }
+});
+
 
 // --- Smart Select Feature ---
 

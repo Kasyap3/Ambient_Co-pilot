@@ -22,6 +22,11 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
 
+  // Configure Side Panel to open on action click
+  chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.error(error));
+
   // Show welcome notification on first install
   if (details.reason === 'install') {
     console.log('Welcome to Ambient Copilot! Click the extension icon to get started.');
