@@ -216,6 +216,7 @@ async def analyze_page(request: dict):
         1. Extract 3-5 key "entities" or facts (e.g., Price, Rating, Location, Main Topic).
         2. Determine the "vibe" or sentiment score on a scale of 0-100 (0=Analytical/Cold, 100=Intense/Passionate).
         3. Suggest a color name or hex code for the vibe (Blue/Green for low, Purple/Red for high).
+        4. Based on the page type, suggest 1 high-value "automation blueprint" (a multi-step workflow title and summary).
         
         Output strictly as JSON:
         {{
@@ -225,7 +226,12 @@ async def analyze_page(request: dict):
           ],
           "vibe_score": 75,
           "vibe_color": "purple",
-          "vibe_label": "Dynamic"
+          "vibe_label": "Dynamic",
+          "blueprint": {{
+            "name": "Analyze & Summarize Data",
+            "summary": "Extract key metrics and draft a professional summary for Notion.",
+            "icon": "🤖"
+          }}
         }}
         """
         

@@ -27,7 +27,10 @@ try {
     assistantContainer.innerHTML = `
     <div class="ambient-header">
       <h3>🤖 Ambient Copilot</h3>
-      <button class="ambient-minimize" id="ambient-minimize-btn">−</button>
+      <div class="ambient-controls">
+        <button class="ambient-minimize" id="ambient-minimize-btn" title="Minimize">−</button>
+        <button class="ambient-close" id="ambient-close-btn" title="Close">×</button>
+      </div>
     </div>
     <div class="ambient-chat-container">
       <div class="ambient-messages" id="ambient-messages">
@@ -63,6 +66,7 @@ try {
 
     // Event listeners
     document.getElementById('ambient-minimize-btn').addEventListener('click', minimizeAssistant);
+    document.getElementById('ambient-close-btn').addEventListener('click', removeFloatingAssistant);
     document.getElementById('ambient-send-btn').addEventListener('click', handleUserMessage);
     document.getElementById('ambient-mic-btn').addEventListener('click', toggleVoiceInput);
     document.getElementById('ambient-user-input').addEventListener('keypress', (e) => {
@@ -97,6 +101,7 @@ try {
 
         // Re-attach event listeners
         document.getElementById('ambient-minimize-btn')?.addEventListener('click', minimizeAssistant);
+        document.getElementById('ambient-close-btn')?.addEventListener('click', removeFloatingAssistant);
         document.getElementById('ambient-send-btn')?.addEventListener('click', handleUserMessage);
         const input = document.getElementById('ambient-user-input');
         if (input) {

@@ -17,7 +17,10 @@
           <div class="neural-orb" id="vibeOrb"></div>
           <h1>Ambient <span>Copilot</span></h1>
         </div>
-        <button id="clearBtn" class="action-btn-sm" title="Clear conversation">×</button>
+        <div class="header-actions">
+          <button id="minimizeBtn" class="action-btn-sm" title="Minimize">−</button>
+          <button id="clearBtn" class="action-btn-sm" title="Clear History">×</button>
+        </div>
       </div>
 
       <!-- Integrated Vision Ticker -->
@@ -109,6 +112,18 @@
         </div>
       </div>
     </main>
+
+    <!-- Autonomous Blueprint Console -->
+    <section id="workflowConsole" class="workflow-hub">
+      <div class="workflow-header">
+        <div class="discovery-pulse" id="blueprintPulse"></div>
+        <h4>Autonomous <span>Blueprints</span></h4>
+        <span class="discovery-status" id="blueprintStatus">Synthesizing...</span>
+      </div>
+      <div id="blueprintNode" class="blueprint-node empty">
+        <div class="node-placeholder">Waiting for page analysis...</div>
+      </div>
+    </section>
 
     <!-- Footer: System Status Line -->
     <footer class="system-footer">

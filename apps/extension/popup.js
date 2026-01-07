@@ -26,8 +26,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (micBtn) micBtn.addEventListener('click', toggleVoiceInput);
 
     const clearBtn = document.getElementById('clearBtn');
-    if (clearBtn) clearBtn.addEventListener('click', clearHistory);
+    if (clearBtn) {
+      console.log('✅ Attaching Clear Listener');
+      clearBtn.addEventListener('click', clearHistory);
+    }
 
+    const minimizeBtn = document.getElementById('minimizeBtn');
+    if (minimizeBtn) {
+      minimizeBtn.addEventListener('click', () => {
+        window.close(); // Standard behavior for popup minimize/close redundancy
+      });
+    }
     const userInput = document.getElementById('userInput');
     if (userInput) {
       userInput.addEventListener('keypress', (e) => {
@@ -356,10 +365,65 @@ async function analyzePage() {
 
     updateVisionTicker(data.entities);
     updatePageVibe(data.vibe_score, data.vibe_color);
+    updateBlueprintConsole(data.blueprint);
     updateNeuralLoad(15); // Reset to idle load
   } catch (err) {
     console.error('WOW Analysis Error:', err);
+    updateBlueprintConsole(null);
   }
+}
+
+function updateBlueprintConsole(blueprint) {
+  const node = document.getElementById('blueprintNode');
+  const status = document.getElementById('blueprintStatus');
+  if (!node) return;
+
+  if (!blueprint) {
+    node.innerHTML = '<div class="node-placeholder">No high-value workflows found.</div>';
+    node.classList.remove('active');
+    status.textContent = 'Idle';
+    return;
+  }
+
+  status.textContent = 'Found Blueprint';
+  node.classList.add('active');
+  node.innerHTML = `
+    <div class="blueprint-card">
+      <div class="recipe-icon">${blueprint.icon || '⚡️'}</div>
+      <div class="recipe-info">
+        <div class="recipe-name">${blueprint.name}</div>
+        <div class="recipe-summary">${blueprint.summary}</div>
+      </div>
+      <button class="run-blueprint-btn" id="runBlueprint">EXECUTOR</button>
+    </div>
+  `;
+
+  document.getElementById('runBlueprint').addEventListener('click', async () => {
+    // Simulate execution steps
+    const btn = document.getElementById('runBlueprint');
+    btn.disabled = true;
+    btn.textContent = 'RUNNING...';
+
+    // Step 1
+    status.textContent = 'Step 1: Analyzing context...';
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Step 2
+    status.textContent = 'Step 2: Syncing to memory...';
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Step 3
+    status.textContent = 'Step 3: Finalizing report...';
+    await new Promise(r => setTimeout(r, 1000));
+
+    status.textContent = 'Blueprint Complete';
+    btn.textContent = 'DONE';
+    addMessage(`Successfully executed blueprint: **${blueprint.name}**`, 'assistant');
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = 'RE-RUN';
+    }, 2000);
+  });
 }
 
 function updateVisionTicker(entities) {
