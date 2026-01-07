@@ -73,7 +73,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   return true; // Keep channel open
 });
-
-// Log when service worker starts
-console.log('Ambient Copilot background service worker ready');
-```
