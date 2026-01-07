@@ -182,6 +182,36 @@ The roadmap for Ambient Copilot focuses on evolving from a reactive assistant to
 
 5. **Federated Learning & Privacy-First Intelligence**: Implement on-device model fine-tuning using techniques like [LoRA](https://arxiv.org/abs/2106.09685) to personalize the agent's behavior without sending private data to external servers. User interactions will continuously refine local adapter weights, creating a truly personalized assistant that respects data sovereignty.
 
+## Screenshots
+
+### Chat Interface & Smart Explain
+![Chat Interface](demo-images/Screenshot%202026-01-07%20at%2002.44.44.png)
+*Sidebar chat interface with contextual AI responses and dynamic suggestions*
+
+![Smart Explain Feature](demo-images/Screenshot%202026-01-07%20at%2002.44.52.png)
+*Text selection triggering the Smart Explain feature with pre-populated query*
+
+### Notes & Memory Management
+![Notes Tab](demo-images/Screenshot%202026-01-07%20at%2002.45.01.png)
+*Site-anchored notes with automatic URL and timestamp tracking*
+
+![Memory System](demo-images/Screenshot%202026-01-07%20at%2002.45.12.png)
+*Persistent memory system learning user preferences over time*
+
+### Workflow Automation
+![Blueprint Console](demo-images/Screenshot%202026-01-07%20at%2002.45.19.png)
+*Autonomous blueprint discovery for workflow automation*
+
+![Action Hub](demo-images/Screenshot%202026-01-07%20at%2002.45.28.png)
+*Action Hub showing detected automation opportunities*
+
+### Advanced Features
+![Systems Tab](demo-images/Screenshot%202026-01-07%20at%2002.54.11.png)
+*Neural Sync dashboard for MCP integrations and system monitoring*
+
+![Full Interface](demo-images/Screenshot%202026-01-07%20at%2002.56.16.png)
+*Complete sidebar interface showing all tabs and features*
+
 ## Contributing
 
 Contributions are welcome! Please ensure all code follows the existing architecture patterns and includes appropriate error handling and logging.
