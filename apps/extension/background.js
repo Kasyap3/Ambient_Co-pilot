@@ -51,7 +51,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   } else if (request.action === 'check_insights') {
     // Call backend for insights
-    fetch('http://localhost:8000/insights', {
+    fetch('http://127.0.0.1:8000/insights', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -70,6 +70,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       })
       .catch(err => console.error('Insight check failed:', err));
+  } else if (request.action === 'SELECTION_DETECTED') {
+    console.log('📡 Background relaying SELECTION_DETECTED:', request.text);
+    // Relay to open extension pages (like the Side Panel)
+    chrome.runtime.sendMessage({
+      action: 'SELECTION_DETECTED',
+      text: request.text
+    });
   }
 
   return true; // Keep channel open

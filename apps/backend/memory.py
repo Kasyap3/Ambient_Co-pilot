@@ -7,8 +7,8 @@ from typing import List
 from pydantic import BaseModel
 
 class Memory(BaseModel):
-    preferences: List[str]
-    notes: List[str]
+    preferences: List[str] = []
+    notes: List[dict] = []
 
 def extract_preferences(user_input: str, memory: Memory) -> Memory:
     """
@@ -65,7 +65,13 @@ def format_memory_for_prompt(memory: Memory) -> str:
         parts.append(f"User preferences: {', '.join(memory.preferences)}")
     
     if memory.notes:
-        recent_notes = memory.notes[-5:]  # Last 5 notes
-        parts.append(f"Recent notes: {'; '.join(recent_notes)}")
+        # Notes are dicts with 'text', 'url', etc.
+        note_texts = []
+        for n in memory.notes[-5:]:
+            if isinstance(n, dict):
+                note_texts.append(n.get('text', ''))
+            else:
+                note_texts.append(str(n))
+        parts.append(f"Recent notes: {'; '.join(note_texts)}")
     
     return "\n".join(parts) if parts else "No stored preferences yet"

@@ -141,14 +141,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       injectFormBlueprint();
     }
     if (msg.action === 'SELECTION_DETECTED') {
-      console.log('🎯 Selection received in Sidebar:', msg.text);
+      console.log('🎯 Popup received SELECTION_DETECTED:', msg.text);
+
+      // Visual feedback on the Orb
+      const orb = document.getElementById('vibeOrb');
+      if (orb) {
+        orb.classList.add('action-detected');
+        setTimeout(() => orb.classList.remove('action-detected'), 1500);
+      }
+
       showActionBadge();
       const input = document.getElementById('userInput');
       if (input) {
-        input.value = `Explain this context: "${msg.text}"`;
+        // Switch tab first
         switchTab('chat');
-        // Small delay to ensure UI state is stable
-        setTimeout(() => handleSend(), 100);
+
+        // Populate input but DON'T auto-send
+        const explainQuery = `Explain this context: "${msg.text}"`;
+        input.value = explainQuery;
+        console.log('📝 Populated input with:', explainQuery);
+
+        // Focus the input so user can review and send manually
+        input.focus();
       }
     }
     if (msg.action === 'show_insight_popup') {
@@ -452,7 +466,7 @@ async function analyzePage() {
     // Simulate "Processing" in the Load Bar
     updateNeuralLoad(45);
 
-    const response = await fetch('http://localhost:8000/analyze-page', {
+    const response = await fetch('http://127.0.0.1:8000/analyze-page', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -660,6 +674,21 @@ async function handleSend() {
     const stored = await chrome.storage.local.get(['memory']);
     const memory = stored.memory || { preferences: [], notes: [] };
 
+    // CRITICAL: Normalize notes to ensure they're all objects
+    const normalizedNotes = memory.notes.map(note => {
+      if (typeof note === 'string') {
+        // Convert legacy string notes to object format
+        return {
+          text: note,
+          url: tab.url || '',
+          title: tab.title || '',
+          icon: '',
+          timestamp: Date.now()
+        };
+      }
+      return note; // Already an object
+    });
+
     // Prepare payload
     const payload = {
       user_input: userMessage,
@@ -667,11 +696,16 @@ async function handleSend() {
       page_url: tab.url,
       page_title: tab.title,
       conversation_history: conversationHistory.slice(-6), // last 3 exchanges
-      memory: memory
+      memory: {
+        preferences: memory.preferences || [],
+        notes: normalizedNotes
+      }
     };
 
+    console.log('📤 Sending payload to backend:', JSON.stringify(payload, null, 2));
+
     // Send to backend
-    const response = await fetch('http://localhost:8000/ask', {
+    const response = await fetch('http://127.0.0.1:8000/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -746,12 +780,13 @@ async function handleSend() {
     setStatus('');
 
   } catch (error) {
-    if (typeof thoughtInterval !== 'undefined') clearInterval(thoughtInterval); // Safety clear
+    if (typeof thoughtInterval !== 'undefined') clearInterval(thoughtInterval);
     if (typeof inChatThoughtInterval !== 'undefined') removeInChatThoughts(inChatThoughtInterval);
 
-    console.error('Error:', error);
-    addMessage('Sorry, I encountered an error. Make sure the backend is running on http://localhost:8000', 'assistant');
-    setStatus('Error connecting to backend', 'error');
+    console.error('🔴 handleSend error:', error);
+    const errorMsg = error.message || 'Unknown network error';
+    await addMessage(`❌ Connection Error: ${errorMsg}. Please ensure the backend is running at http://127.0.0.1:8000`, 'assistant');
+    setStatus('Connection Error', 'error');
     setTimeout(() => setStatus(''), 5000);
   } finally {
     sendBtn.disabled = false;
@@ -977,130 +1012,92 @@ function setStatus(text, type = 'default') {
 }
 
 async function handleAction(action) {
+  if (!action) return;
   console.log('🎬 handleAction called:', action);
-  if (action.type === 'open_url' && action.url) {
+
+  const actionType = action.action_type || action.type;
+  console.log('🎯 Normalized Action Type:', actionType);
+
+  if (actionType === 'open_url' && action.url) {
     try {
       console.log('🌐 Opening URL:', action.url);
-      // Open URL in new tab
       const newTab = await chrome.tabs.create({ url: action.url, active: true });
-      console.log('✅ Tab created, ID:', newTab.id);
 
-      // Prepare context for floating assistant
       const assistantContext = {
         original_query: document.getElementById('userInput').value,
         preferences: await getStoredPreferences(),
         conversation_history: conversationHistory.slice(-3)
       };
 
-      // Retry logic to inject floating assistant
-      const maxRetries = 5;
-      let retryCount = 0;
-
       const tryInjectAssistant = async () => {
         try {
-          console.log(`🔄 Attempt ${retryCount + 1}/${maxRetries} - sending message to tab ${newTab.id}`);
-          const msg = {
+          await chrome.tabs.sendMessage(newTab.id, {
             action: 'show_assistant',
             message: action.proactive_message || action.message || 'I\'m here to help!',
             context: assistantContext
-          };
-          console.log('📨 Message:', msg);
-          const response = await chrome.tabs.sendMessage(newTab.id, msg);
-          console.log('✅ Floating assistant injected successfully! Response:', response);
+          });
         } catch (e) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            console.log(`Retry ${retryCount}/${maxRetries} - waiting for content script...`);
-            setTimeout(tryInjectAssistant, 1000);
-          } else {
-            console.error('Failed to inject floating assistant after max retries:', e);
-          }
+          // Silently retry or log if needed
         }
       };
-
-      // Start trying after initial delay
       setTimeout(tryInjectAssistant, 1500);
-
-      console.log('Opened URL:', action.url);
     } catch (error) {
       console.error('Error opening tab:', error);
     }
   }
-  // --- New Agentic Action: Navigate Page ---
-  else if (action.type === 'navigate_page') {
+  else if (actionType === 'navigate_page') {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
-
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'agent_navigate',
-        target: action.entities.target_text,
-        direction: action.entities.scroll_direction
-      });
-
-      if (action.message) setStatus(action.message, 'success');
+      if (tab) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'agent_navigate',
+          target: action.entities?.target_text || action.target,
+          direction: action.entities?.scroll_direction || action.direction || 'down'
+        });
+        if (action.message || action.simple_message) setStatus(action.message || action.simple_message, 'success');
+      }
     } catch (e) {
       console.error('Navigation failed:', e);
     }
   }
-  // --- Legacy Rescue: Save Note ---
-  else if (action.type === 'save_note' && action.entities && action.entities.note_content) {
-    const note = action.entities.note_content;
-    addMessage('💾 Saving note to your Memory Bank...', 'assistant');
-
+  else if (actionType === 'save_note') {
     try {
+      const note = action.entities?.note_content || action.note || action.text;
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-      // Save to Backend (Persistence)
-      await fetch('http://localhost:8000/assist-chat', {
+      // Save to Backend
+      fetch('http://127.0.0.1:8000/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_message: `save this note: ${note}`,
-          page_info: { title: tab.title, url: tab.url },
-          context: { action: { type: 'save_note', entities: { note_content: note } } }
-        })
-      });
+        body: JSON.stringify({ title: tab.title, url: tab.url, content: note })
+      }).catch(err => console.error('Backend note save failed:', err));
 
-      // Save to Local (Legacy Archive)
       const stored = await chrome.storage.local.get(['memory']);
       const memory = stored.memory || { preferences: [], notes: [] };
-
-      const newNote = {
-        text: note,
-        url: tab.url,
-        title: tab.title,
-        icon: tab.favIconUrl || '',
-        timestamp: Date.now()
-      };
+      const newNote = { text: note, url: tab.url, title: tab.title, icon: tab.favIconUrl || '', timestamp: Date.now() };
 
       if (!memory.notes.some(n => (n.text === note || n === note))) {
         memory.notes.push(newNote);
-        if (memory.notes.length > 50) memory.notes.shift();
         await chrome.storage.local.set({ memory });
-        addMessage('✅ Note saved! You can view it in the "Brain" and "Notes" tabs.', 'assistant');
+        addMessage('✅ Note saved!', 'assistant');
         renderNotes();
         renderSiteNotes();
       }
     } catch (e) {
       console.error('Error saving note:', e);
-      addMessage('❌ Failed to save note.', 'assistant');
     }
   }
-  // --- Highlight Text on Page ---
-  else if (action.type === 'highlight_text' || action.action_type === 'highlight_text') {
+  else if (actionType === 'highlight_text') {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab) {
         const snippet = action.entities?.highlight_snippet || action.highlight_snippet || action.text;
-        console.log('🔦 Highlighting snippet:', snippet);
+        console.log('🔦 Sending highlight to content script:', snippet);
         chrome.tabs.sendMessage(tab.id, {
           action: 'highlight_text',
           text: snippet
         });
-        if (action.message || action.simple_message) {
-          setStatus(action.message || action.simple_message, 'success');
-        }
+        if (action.message || action.simple_message) setStatus(action.message || action.simple_message, 'success');
       }
     } catch (e) {
       console.error('Highlight failed:', e);
@@ -1248,7 +1245,7 @@ async function fetchRecommendations() {
 
     const stored = await chrome.storage.local.get(['memory']);
 
-    const response = await fetch('http://localhost:8000/recommend', {
+    const response = await fetch('http://127.0.0.1:8000/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1354,7 +1351,7 @@ async function renderSiteNotes() {
   container.innerHTML = '<div class="loading">Loading Notebook...</div>';
 
   try {
-    const response = await fetch('http://localhost:8000/notes');
+    const response = await fetch('http://127.0.0.1:8000/notes');
     if (!response.ok) throw new Error(`Status: ${response.status}`);
     const notes = await response.json();
 
@@ -1389,7 +1386,7 @@ async function renderSiteNotes() {
 
 window.removeBackendNote = async function (index) {
   if (confirm('Permanently delete this note from the archive?')) {
-    await fetch(`http://localhost:8000/notes/${index}`, { method: 'DELETE' });
+    await fetch(`http://127.0.0.1:8000/notes/${index}`, { method: 'DELETE' });
     renderSiteNotes();
   }
 };

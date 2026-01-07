@@ -1,6 +1,8 @@
 // Content script - runs on every webpage
 // Extracts visible text and handles proactive form detection
 
+console.log('🚀 CONTENT.JS LOADED on:', window.location.href);
+
 // Store injected buttons to avoid duplicates
 const magicButtons = new Set();
 // Smart Select Button reference
@@ -28,6 +30,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // --- New features ---
   if (request.action === 'highlight_text') {
+    console.log('🔦 Content Script received highlight request for:', request.text);
     highlightTextOnPage(request.text);
   }
 
@@ -203,6 +206,7 @@ function showSparkleButton(x, y, text) {
     e.preventDefault();
     e.stopPropagation();
 
+    console.log('✨ Explain button clicked! Sending selection:', text);
     // Send Signal directly to Side Panel
     chrome.runtime.sendMessage({ action: 'SELECTION_DETECTED', text: text });
 
@@ -223,13 +227,20 @@ function highlightTextOnPage(snippet) {
   console.log('🔦 Attempting highlight for:', snippet);
 
   // 1. Try exact find
-  let found = window.find(snippet, false, false, true);
+  const cleanSnippet = snippet.trim();
+  let found = window.find(cleanSnippet, false, false, true);
 
-  // 2. Fallback: Try a shorter version if it's too long
-  if (!found && snippet.length > 50) {
-    const shorter = snippet.substring(0, 50);
+  // 2. Fallback: Deep Text Search if find fails
+  if (!found) {
+    console.log('🔦 native find failed, trying deepTextSearch...');
+    found = deepTextSearch(cleanSnippet);
+  }
+
+  // 3. Fallback: Try a shorter version if it's too long
+  if (!found && cleanSnippet.length > 30) {
+    const shorter = cleanSnippet.substring(0, 30);
     console.log('🔦 Retrying with shorter snippet:', shorter);
-    found = window.find(shorter, false, false, true);
+    found = window.find(shorter, false, false, true) || deepTextSearch(shorter);
   }
 
   if (found) {
@@ -262,6 +273,24 @@ function highlightTextOnPage(snippet) {
   } else {
     console.warn('❌ Text snippet not found on page.');
   }
+}
+
+function deepTextSearch(target) {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+  let textNode;
+  while (textNode = walker.nextNode()) {
+    const index = textNode.textContent.indexOf(target);
+    if (index !== -1) {
+      const range = document.createRange();
+      range.setStart(textNode, index);
+      range.setEnd(textNode, index + target.length);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    }
+  }
+  return false;
 }
 
 function executeAgentNavigation(targetText, direction) {

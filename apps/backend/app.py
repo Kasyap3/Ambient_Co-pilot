@@ -12,7 +12,7 @@ from datetime import datetime
 load_dotenv()
 
 # Import local modules
-from memory import extract_preferences
+from memory import extract_preferences, Memory
 from notes import save_note, get_all_notes, delete_note, clear_notes
 from prompts import build_context_prompt
 from summarizer import summarize_text
@@ -33,20 +33,16 @@ app.add_middleware(
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class Message(BaseModel):
-    role: str
-    content: str
-
-class Memory(BaseModel):
-    preferences: List[str]
-    notes: List[dict]
+    role: str = "user"
+    content: str = ""
 
 class AskRequest(BaseModel):
     user_input: str
-    page_text: str
-    page_url: str
-    page_title: str
-    conversation_history: List[Message]
-    memory: Memory
+    page_text: str = ""
+    page_url: str = ""
+    page_title: str = ""
+    conversation_history: List[Message] = []
+    memory: Memory = Memory()
 
 @app.get("/")
 async def root():
@@ -74,9 +70,22 @@ async def wipe_notes():
     clear_notes()
     return {"status": "success"}
 
+@app.post("/notes")
+async def add_note(request: dict):
+    """Save a new note to the backend"""
+    title = request.get('title', 'Unknown Page')
+    url = request.get('url', '')
+    content = request.get('content', '')
+    if content:
+        save_note(title, url, content)
+        return {"status": "success"}
+    return {"status": "error", "message": "No content provided"}
+
 @app.post("/ask")
 async def ask(request: AskRequest):
     """Main endpoint for processing user queries with page context"""
+    print(f">>> /ask called with: {request.user_input[:50]}...")
+    print(f">>> Full request: {request}")
     try:
         # Extract any new preferences
         updated_memory = extract_preferences(request.user_input, request.memory)
@@ -105,15 +114,15 @@ async def ask(request: AskRequest):
         
         action = detect_action(request.user_input, action_context)
         
-        if action:
+        if action and action.get('action_detected'):
             # User wants to take an action!
             return {
-                "reply": action['message'],
+                "reply": action.get('message', "I'm performing that action now."),
                 "memory": updated_memory.dict(),
                 "context_note": None,
                 "action": {
-                    "type": action['action_type'],
-                    "url": action['url'],
+                    "type": action.get('action_type'),
+                    "url": action.get('url'),
                     "proactive_message": action.get('proactive_message'),
                     "entities": action.get('entities')
                 }
@@ -128,7 +137,7 @@ async def ask(request: AskRequest):
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a helpful, context-aware browsing assistant that helps users understand and navigate web pages."
+                    "content": "You are a helpful, context-aware browsing assistant. Keep ALL responses under 70 words. Be concise and direct."
                 },
                 {
                     "role": "user", 
@@ -136,7 +145,7 @@ async def ask(request: AskRequest):
                 }
             ],
             temperature=0.7,
-            max_tokens=500
+            max_tokens=150  # ~70 words
         )
         
         reply = response.choices[0].message.content.strip()
@@ -405,17 +414,21 @@ async def recommend_questions(request: RecommendationRequest):
         )
         
         result = response.choices[0].message.content.strip()
+        print(f"DEBUG: Recommend LLM Result: {result}")
         
         # Robust parsing
         try:
             import re
+            # Look for JSON-like list
             json_match = re.search(r'\[.*\]', result, re.DOTALL)
             if json_match:
-                questions = json.loads(json_match.group(0))
+                # Replace single quotes with double quotes for valid JSON
+                json_str = json_match.group(0).replace("'", '"')
+                questions = json.loads(json_str)
                 if isinstance(questions, list):
                     return questions[:3]
         except Exception as parse_err:
-            print(f"Regex parse failed in recommend: {parse_err}")
+            print(f"Extraction failed in recommend: {parse_err}")
 
         # Fallback to lines if regex fails
         lines = [line.strip('- ').strip('123. ') for line in result.split('\n') if '?' in line]

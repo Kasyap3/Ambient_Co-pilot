@@ -40,8 +40,10 @@ Respond ONLY with valid JSON in this exact format:
 }
 
 Be smart about:
-- If user input says "Explain this context: '...'", treat it as a "highlight_text" action.
-- Extract the snippet from between the quotes to highlight.
+- If the user says "Explain this context: '...'", you MUST return action_type "highlight_text".
+- Set intent to "highlight_fact".
+- Set entities.highlight_snippet to the EXPLICIT text between the quotes.
+- This is the highest priority action when that specific phrase is used.
 
 Examples:
 
@@ -140,7 +142,7 @@ def detect_action_with_llm(user_input: str, context: dict) -> dict:
         return result
     except Exception as e:
         print(f"❌ Detection Error: {e}")
-        return {"action_detected": false}
+        return {"action_detected": False}
 
 def detect_action(user_input: str, context: dict) -> dict:
     """Main entry point"""
