@@ -3,6 +3,7 @@ console.log('🚀 POPUP.JS LOADING...');
 let conversationHistory = [];
 let recognition = null;
 let isRecording = false;
+let suggestionRefreshTimer = null; // Auto-refresh timer for suggestions
 
 console.log('✅ POPUP.JS VARIABLES INITIALIZED');
 
@@ -113,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderHistory();
       }
       fetchRecommendations();
+      startSuggestionAutoRefresh(); // Start 30s auto-refresh timer
     }
   } catch (e) {
     console.error('❌ Error in onboarding/history check:', e);
@@ -779,6 +781,10 @@ async function handleSend() {
 
     setStatus('');
 
+    // Refresh suggestions after each message
+    fetchRecommendations();
+    startSuggestionAutoRefresh();
+
   } catch (error) {
     if (typeof thoughtInterval !== 'undefined') clearInterval(thoughtInterval);
     if (typeof inChatThoughtInterval !== 'undefined') removeInChatThoughts(inChatThoughtInterval);
@@ -1435,5 +1441,26 @@ async function clearNotes() {
       await chrome.storage.local.set({ memory: stored.memory });
       renderNotes();
     }
+  }
+}
+
+// Auto-refresh suggestions every 30 seconds
+function startSuggestionAutoRefresh() {
+  // Clear any existing timer
+  if (suggestionRefreshTimer) {
+    clearInterval(suggestionRefreshTimer);
+  }
+
+  // Refresh suggestions every 30 seconds
+  suggestionRefreshTimer = setInterval(() => {
+    console.log('🔄 Auto-refreshing suggestions (30s timer)...');
+    fetchRecommendations();
+  }, 30000); // 30 seconds
+}
+
+function stopSuggestionAutoRefresh() {
+  if (suggestionRefreshTimer) {
+    clearInterval(suggestionRefreshTimer);
+    suggestionRefreshTimer = null;
   }
 }
