@@ -76,6 +76,13 @@ graph TD
 *   **Proactive Form Detection**: The system automatically identifies complex forms on webpages and offers a "Magic Fill" option to populate them based on the user's stored profile and context.
 *   **Adaptive Workflow Automation**: The system observes user interactions to learn and automate repetitive workflows. Users can iteratively refine these automated behaviors and navigation paths using natural language prompts or voice commands, allowing the assistant to adapt to specific operational needs over time.
 *   **Typeform-Style Onboarding**: A step-by-step configuration wizard that captures user goals, professional context, and response preferences to personalize the agent's behavior.
+*   **Futuristic "Neo-Minimalist" UI**: A premium, dual-tone interface (Slate & Electric Sky Blue) designed for maximum clarity and "breathing room" (480x600 viewport).
+*   **"WOW" Agentic Features**:
+    *   **Entity Vision Ticker**: A real-time scrolling facts ribbon that extracts key data (prices, topics) instantly.
+    *   **Neural Load Dashboard**: A high-tech status HUD tracking tool utilization and cognitive load.
+    *   **Page Vibe Meter**: A pulsing "Neural Orb" that shifts colors based on page sentiment analysis.
+*   **Refined Memory Core (CRUD)**: A searchable, fluidic mesh of memory cards allowing users to edit, delete, and filter their agent's long-term context.
+*   **Voice Command Node**: integrated voice input with a "Pulsing" recording state for seamless hands-free interaction.
 
 ## Prerequisites
 

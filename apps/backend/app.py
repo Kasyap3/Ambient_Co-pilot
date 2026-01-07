@@ -198,6 +198,62 @@ async def ask(request: AskRequest):
             "context_note": None
         }
 
+@app.post("/analyze-page")
+async def analyze_page(request: dict):
+    print(">>> ALIVE-TICKER CALLED")
+    """
+    Perform deep analysis of the page for Entity Vision and Vibe Meter
+    """
+    try:
+        page_text = request.get('page_text', '')[:4000]
+        page_title = request.get('page_title', '')
+        
+        prompt = f"""Analyze the following page content and extract key metadata.
+        
+        Title: {page_title}
+        Content: {page_text}
+        
+        1. Extract 3-5 key "entities" or facts (e.g., Price, Rating, Location, Main Topic).
+        2. Determine the "vibe" or sentiment score on a scale of 0-100 (0=Analytical/Cold, 100=Intense/Passionate).
+        3. Suggest a color name or hex code for the vibe (Blue/Green for low, Purple/Red for high).
+        
+        Output strictly as JSON:
+        {{
+          "entities": [
+            {{"label": "Price", "value": "$99"}},
+            {{"label": "Topic", "value": "AI News"}}
+          ],
+          "vibe_score": 75,
+          "vibe_color": "purple",
+          "vibe_label": "Dynamic"
+        }}
+        """
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=250
+        )
+        
+        analysis_text = response.choices[0].message.content.strip()
+        if analysis_text.startswith('```'):
+            analysis_text = analysis_text.split('```')[1]
+            if analysis_text.startswith('json'):
+                analysis_text = analysis_text[4:]
+            analysis_text = analysis_text.strip()
+            
+        analysis = json.loads(analysis_text)
+        return analysis
+    except Exception as e:
+        print(f"Error in analyze-page: {e}")
+        return {
+            "entities": [{"label": "Status", "value": "Ready"}],
+            "vibe_score": 50,
+            "vibe_color": "blue",
+            "vibe_label": "Calm"
+        }
+
 @app.post("/log")
 async def log_message(request: dict):
     """Simple logging endpoint for extension debugging"""
@@ -286,6 +342,7 @@ class RecommendationRequest(BaseModel):
 
 @app.post("/recommend")
 async def recommend_questions(request: RecommendationRequest):
+    print(">>> ALIVE-REC CALLED")
     """
     Generate proactive recommended questions based on page context
     """
@@ -324,16 +381,21 @@ async def recommend_questions(request: RecommendationRequest):
         )
         
         result = response.choices[0].message.content.strip()
-        # Parse list
-        if '[' in result:
-             import ast
-             try:
-                 questions = json.loads(result)
-             except:
-                 questions = ast.literal_eval(result)
-             return questions
-        else:
-             return [line.strip('- ') for line in result.split('\n') if line.strip()][:3]
+        
+        # Robust parsing
+        try:
+            import re
+            json_match = re.search(r'\[.*\]', result, re.DOTALL)
+            if json_match:
+                questions = json.loads(json_match.group(0))
+                if isinstance(questions, list):
+                    return questions[:3]
+        except Exception as parse_err:
+            print(f"Regex parse failed in recommend: {parse_err}")
+
+        # Fallback to lines if regex fails
+        lines = [line.strip('- ').strip('123. ') for line in result.split('\n') if '?' in line]
+        return lines[:3] if lines else ["Summarize this page", "What is the main topic?", "Any key insights?"]
 
     except Exception as e:
         print(f"Error in recommend: {e}")
@@ -430,6 +492,8 @@ Your job:
 Respond with JSON:
 {{
   "message": "your conversational response",
+  "suggested_questions": ["Short Q1", "Short Q2"],
+  "memory_used": "brief explanation of what memory was accessed (optional)",
   "action": {{
     "type": "fill_form" or null,
     "fields": [
@@ -486,6 +550,11 @@ Be smart about:
             }
         
         print(f"💬 Assistant: {result.get('message', 'No message')}")
+        
+        # Standardize fields for frontend
+        if 'memory_used' in result:
+            result['context_note'] = result['memory_used']
+            
         return result
         
     except json.JSONDecodeError as e:

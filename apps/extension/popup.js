@@ -10,74 +10,118 @@ console.log('✅ POPUP.JS VARIABLES INITIALIZED');
 setStatus('Ready');
 try {
   initNeuralConnectivity();
-} catch (e) { console.error('Neural init failed:', e); }
+} catch (e) {
+  console.log('Neural init placeholder');
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Priority: Attach Clear Button Listener FIRST
-  const clearBtn = document.getElementById('clearBtn');
-  if (clearBtn) {
-    console.log('✅ Attaching Clear Listener');
-    clearBtn.addEventListener('click', clearHistory);
-  } else {
-    console.error('❌ Clear button NOT found in DOM checking id="clearBtn"');
+  console.log('🏁 DOMContentLoaded start');
+
+  // Priority: Attach Main Action Listeners FIRST
+  try {
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) sendBtn.addEventListener('click', handleSend);
+
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) micBtn.addEventListener('click', toggleVoiceInput);
+
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) clearBtn.addEventListener('click', clearHistory);
+
+    const userInput = document.getElementById('userInput');
+    if (userInput) {
+      userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+    }
+
+    // Recommendations Dropdown
+    const recDropdown = document.getElementById('recDropdown');
+    if (recDropdown) {
+      recDropdown.addEventListener('change', (e) => {
+        const selected = e.target.value;
+        if (selected) {
+          if (userInput) userInput.value = selected;
+          handleSend();
+          recDropdown.value = ''; // Reset
+        }
+      });
+      recDropdown.dataset.listenerAttached = "true";
+    }
+  } catch (e) {
+    console.error('❌ Failed to attach core listeners:', e);
   }
 
   // Tab handling
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Remove active class from all tabs
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-
-      // Activate clicked tab
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-pane').forEach(c => c.style.display = 'none');
       btn.classList.add('active');
       const tabId = btn.dataset.tab;
       const content = document.getElementById(`${tabId}-tab`);
-      content.style.display = 'flex';
-
-      if (tabId === 'brain') {
-        renderNotes();
-      }
+      if (content) content.style.display = 'flex';
+      if (tabId === 'brain') renderNotes();
     });
   });
 
-  document.getElementById('clearNotesBtn').addEventListener('click', clearNotes);
+  const clearNotesBtn = document.getElementById('clearNotesBtn');
+  if (clearNotesBtn) clearNotesBtn.addEventListener('click', clearNotes);
 
-  // Check onboarding status
-  const stored = await chrome.storage.local.get(['history', 'memory', 'onboarding_complete']);
-
-  if (!stored.onboarding_complete) {
-    showOnboarding();
-  } else {
-    showChat();
-    // Load history
-    if (stored.history) {
-      conversationHistory = stored.history;
-      renderHistory();
-    }
-    // Fetch recommendations proactively
-    fetchRecommendations();
+  const memorySearch = document.getElementById('memorySearch');
+  if (memorySearch) {
+    memorySearch.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const cards = document.querySelectorAll('.note-card');
+      cards.forEach(card => {
+        const text = card.querySelector('.note-content').textContent.toLowerCase();
+        card.style.display = text.includes(query) ? 'flex' : 'none';
+      });
+    });
   }
 
-  // Initialize speech recognition
-  initSpeechRecognition();
-
-  // Event listeners
-  document.getElementById('sendBtn').addEventListener('click', handleSend);
-  document.getElementById('onboardingForm').addEventListener('submit', handleOnboardingSubmit);
-  document.getElementById('userInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  // Check onboarding status
+  try {
+    const stored = await chrome.storage.local.get(['history', 'memory', 'onboarding_complete']);
+    if (!stored.onboarding_complete) {
+      showOnboarding();
+    } else {
+      showChat();
+      if (stored.history) {
+        conversationHistory = stored.history;
+        renderHistory();
+      }
+      fetchRecommendations();
     }
-  });
+  } catch (e) {
+    console.error('❌ Error in onboarding/history check:', e);
+  }
 
-  document.getElementById('micBtn').addEventListener('click', toggleVoiceInput);
+  // Initialize secondary features
+  try {
+    initSpeechRecognition();
+    const setupForm = document.getElementById('setupForm');
+    if (setupForm) setupForm.addEventListener('submit', handleOnboardingSubmit);
+  } catch (e) {
+    console.error('❌ Secondary init failed:', e);
+  }
 
-  // Show ready status
+  // Perform WOW analysis on load
+  try {
+    analyzePage();
+  } catch (e) {
+    console.error('Initial analysis failed:', e);
+  }
+
   setStatus('Ready');
-  initNeuralConnectivity();
 });
+
+function initNeuralConnectivity() {
+  console.log('🧠 Neural Connectivity Initialized');
+}
 
 function initSpeechRecognition() {
   // Check if browser supports speech recognition
@@ -99,8 +143,8 @@ function initSpeechRecognition() {
     isRecording = true;
     const micBtn = document.getElementById('micBtn');
     micBtn.classList.add('recording');
-    micBtn.textContent = '⏹️';
-    setStatus('🎤 Listening... (speak now)', 'loading');
+    micBtn.innerHTML = '<span>⏹️</span>'; // Changed to span for styling
+    setStatus('🎤 Listening...', 'loading');
   };
 
   recognition.onresult = (event) => {
@@ -115,6 +159,8 @@ function initSpeechRecognition() {
         interimTranscript += transcript;
       }
     }
+
+    console.log('🗣️ Transcript:', { finalTranscript, interimTranscript });
 
     // Update input with transcribed text
     const input = document.getElementById('userInput');
@@ -211,6 +257,152 @@ function stopVoiceInput() {
   }
 }
 
+function showInChatThoughts() {
+  const chatHistory = document.getElementById('chatHistory');
+  const thoughtDiv = document.createElement('div');
+  thoughtDiv.className = 'popup-thought';
+  thoughtDiv.id = 'active-thought';
+  thoughtDiv.innerHTML = `
+        <span class="thought-text">Analyzing your intent...</span>
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+    `;
+  chatHistory.appendChild(thoughtDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+
+  const thoughts = [
+    '🔍 Analyzing your intent...',
+    '🌐 Scanning page context...',
+    '💡 Checking memory bank...',
+    '⚡️ Formulating optimal response...',
+    '✨ Finalizing output...'
+  ];
+  let i = 0;
+  const interval = setInterval(() => {
+    const textEl = thoughtDiv.querySelector('.thought-text');
+    if (textEl) {
+      i++;
+      textEl.textContent = thoughts[i % thoughts.length];
+    }
+  }, 1500);
+  return interval;
+}
+
+function removeInChatThoughts(interval) {
+  if (interval) clearInterval(interval);
+  const thoughtDiv = document.getElementById('active-thought');
+  if (thoughtDiv) thoughtDiv.remove();
+}
+
+async function addMessageWithAnimation(text, role) {
+  if (role !== 'assistant') {
+    addMessage(text, role);
+    return;
+  }
+
+  const chatHistory = document.getElementById('chatHistory');
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${role}-message`;
+  chatHistory.appendChild(messageDiv);
+
+  // Filter citations for animation (we'll add them at the end)
+  const rawContent = text;
+  let currentText = '';
+  const speed = 15; // ms per char
+
+  for (let i = 0; i < rawContent.length; i++) {
+    currentText += rawContent[i];
+    // Don't update innerHTML every char if it contains tags
+    if (rawContent.includes('[[')) {
+      // For citations, just show partial text for now
+      messageDiv.textContent = currentText;
+    } else {
+      messageDiv.textContent = currentText;
+    }
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    await new Promise(r => setTimeout(r, speed));
+  }
+
+  // Final render with citation formatting
+  messageDiv.innerHTML = formatMessageContent(text);
+  attachCitationListeners(messageDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+
+  // Save to history
+  conversationHistory.push({ role, content: text });
+  chrome.storage.local.set({ history: conversationHistory });
+}
+
+// Perform WOW analysis function logic moved above handleSend
+
+async function analyzePage() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) return;
+
+    // Simulate "Processing" in the Load Bar
+    updateNeuralLoad(45);
+
+    const response = await fetch('http://localhost:8000/analyze-page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page_text: tab.title, // Simplified for now, content.js could send full text
+        page_title: tab.title
+      })
+    });
+
+    if (!response.ok) throw new Error('Analysis failed');
+    const data = await response.json();
+
+    updateVisionTicker(data.entities);
+    updatePageVibe(data.vibe_score, data.vibe_color);
+    updateNeuralLoad(15); // Reset to idle load
+  } catch (err) {
+    console.error('WOW Analysis Error:', err);
+  }
+}
+
+function updateVisionTicker(entities) {
+  const tickerContent = document.getElementById('tickerContent');
+  const tickerContainer = document.getElementById('visionTicker');
+  if (!entities || entities.length === 0) return;
+
+  tickerContent.innerHTML = '';
+  entities.forEach(entity => {
+    const item = document.createElement('div');
+    item.className = 'ticker-item';
+    item.innerHTML = `<span class="label">${entity.label}:</span> ${entity.value}`;
+    tickerContent.appendChild(item);
+  });
+
+  // Duplicate content for seamless loop
+  const clone = tickerContent.innerHTML;
+  tickerContent.innerHTML += clone;
+
+  tickerContainer.classList.remove('hidden');
+}
+
+function updatePageVibe(score, color) {
+  const orb = document.getElementById('vibeOrb');
+  if (!orb) return;
+
+  // Remove old vibe classes
+  orb.classList.remove('vibe-chill', 'vibe-calm', 'vibe-dynamic', 'vibe-intense');
+
+  // Simple mapping
+  if (score < 25) orb.classList.add('vibe-chill');
+  else if (score < 50) orb.classList.add('vibe-calm');
+  else if (score < 75) orb.classList.add('vibe-dynamic');
+  else orb.classList.add('vibe-intense');
+}
+
+function updateNeuralLoad(percent) {
+  const loadBar = document.getElementById('neuralLoad');
+  if (loadBar) {
+    loadBar.style.width = `${percent}%`;
+  }
+}
+
 async function handleSend() {
   // Stop recording if active
   if (isRecording) {
@@ -266,6 +458,9 @@ async function handleSend() {
     }
   }, 1200); // Transition thoughts every 1.2s
 
+  // 3. START IN-CHAT THOUGHTS
+  const inChatThoughtInterval = showInChatThoughts();
+
   try {
     // Get page context
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -299,8 +494,9 @@ async function handleSend() {
       body: JSON.stringify(payload)
     });
 
-    // Stop Chain of Thought
+    // Stop Chain of Thought (In status bar as well just in case)
     clearInterval(thoughtInterval);
+    removeInChatThoughts(inChatThoughtInterval);
 
     // Update Pulse Latency
     const endTime = Date.now();
@@ -327,8 +523,8 @@ async function handleSend() {
       console.log('⚠️ No action in response');
     }
 
-    // Add assistant response
-    addMessage(data.reply, 'assistant');
+    // Add assistant response with animation
+    await addMessageWithAnimation(data.reply, 'assistant');
 
     // Update memory if provided
     if (data.memory) {
@@ -340,26 +536,33 @@ async function handleSend() {
       addContextNote(data.context_note);
     }
 
-    // Update recommendations if provided
+    // Update recommendations dropdown if provided
     if (data.suggested_questions && data.suggested_questions.length > 0) {
       const recContainer = document.getElementById('recommendations');
-      const recChips = document.getElementById('recChips');
-      recChips.innerHTML = '';
+      const recDropdown = document.getElementById('recDropdown');
+
+      // Clear old options except the first one
+      recDropdown.innerHTML = '<option value="" disabled selected>Choose a follow-up...</option>';
 
       data.suggested_questions.forEach(q => {
-        const chip = document.createElement('div');
-        chip.className = 'rec-chip';
-        chip.textContent = q;
-        chip.addEventListener('click', () => handleRecClick(q));
-        recChips.appendChild(chip);
+        const option = document.createElement('option');
+        option.value = q;
+        option.textContent = q;
+        recDropdown.appendChild(option);
       });
+
       recContainer.classList.remove('hidden');
+
+      recContainer.classList.remove('hidden');
+    } else {
+      document.getElementById('recommendations').classList.add('hidden');
     }
 
     setStatus('');
 
   } catch (error) {
     if (typeof thoughtInterval !== 'undefined') clearInterval(thoughtInterval); // Safety clear
+    if (typeof inChatThoughtInterval !== 'undefined') removeInChatThoughts(inChatThoughtInterval);
 
     console.error('Error:', error);
     addMessage('Sorry, I encountered an error. Make sure the backend is running on http://localhost:8000', 'assistant');
@@ -569,14 +772,11 @@ function setStatus(text, type = 'default') {
   statusEl.textContent = text;
   statusEl.className = 'status ' + type;
 
-  // Update Brain State
-  const brain = document.getElementById('agentBrain');
-  if (brain) {
-    if (type === 'loading' || type === 'listening') {
-      brain.classList.add('thinking');
-    } else {
-      brain.classList.remove('thinking');
-    }
+  // Update Orb Vibe if needed
+  const orb = document.getElementById('vibeOrb');
+  if (orb) {
+    if (type === 'loading') orb.style.opacity = '0.5';
+    else orb.style.opacity = '1';
   }
 
   // Clear success/error after 3s
@@ -668,68 +868,29 @@ async function getStoredPreferences() {
 // --- Onboarding Logic (Typeform Style) ---
 
 function showOnboarding() {
-  document.getElementById('onboardingConfig').classList.remove('hidden');
-  document.getElementById('mainChat').classList.add('hidden');
-  initOnboardingListeners();
+  const overlay = document.getElementById('setupOverlay');
+  if (overlay) overlay.classList.remove('hidden');
 }
 
 async function handleOnboardingSubmit(e) {
   e.preventDefault();
-
-  console.log('📝 Submitting onboarding form...');
-
-  try {
-    // Collect data safe check
-    const getVal = (id) => {
-      const el = document.getElementById(id);
-      return el ? el.value : '';
-    };
-
-    const formData = {
-      goal: getVal('goal') || "General",
-      profession: getVal('profession') || "User",
-      interests: getVal('interests') || "Everything",
-      detail_level: getVal('detail_level') || "Brief",
-      tone: getVal('tone') || "Professional"
-    };
-
-    console.log('💾 Saving settings:', formData);
-
-    // Save to storage
+  // Simplified for this overlay version
+  const apiKey = e.target.querySelector('input').value;
+  if (apiKey) {
     await chrome.storage.local.set({
-      user_settings: formData,
+      openai_api_key: apiKey,
       onboarding_complete: true
     });
-
-    // Transition to Chat
     showChat();
-    setStatus('Profile saved!', 'success');
-
-    // Initial greeting
-    setTimeout(() => {
-      addMessage(`Welcome! I've customized my brain for ${formData.goal} related to ${formData.interests}.`, 'assistant');
-      // Fetch recommendations after greeting
-      fetchRecommendations();
-    }, 500);
-
-  } catch (err) {
-    console.error('❌ Onboarding Error:', err);
-    setStatus('Error saving profile', 'error');
+    setStatus('API Key updated!', 'success');
   }
 }
 
 function showChat() {
   console.log('✨ Showing Chat Interface');
-  document.getElementById('onboardingConfig').classList.add('hidden');
-  document.getElementById('mainChat').classList.remove('hidden');
-
-  // Ensure input area is visible if it was separately hidden
-  const inputArea = document.querySelector('.input-area');
-  if (inputArea) inputArea.classList.remove('hidden');
-
-  // Initialize features
+  const overlay = document.getElementById('setupOverlay');
+  if (overlay) overlay.classList.add('hidden');
   renderNotes();
-  // checkInsights(); // If implemented
 }
 
 function initOnboardingListeners() {
@@ -856,10 +1017,14 @@ async function fetchRecommendations() {
     }
 
     const data = await response.json();
+    console.log('✨ Recommendations data:', data);
 
-    if (data.questions && data.questions.length > 0) {
+    if (data && Array.isArray(data)) {
+      renderRecommendations(data);
+    } else if (data.questions && data.questions.length > 0) {
       renderRecommendations(data.questions);
     } else {
+      console.log('⚠️ No suggestions found, using fallbacks');
       renderRecommendations(fallbacks);
     }
 
@@ -871,21 +1036,26 @@ async function fetchRecommendations() {
 }
 
 function renderRecommendations(questions) {
+  console.log('🎨 Rendering recommendations:', questions);
   const recContainer = document.getElementById('recommendations');
-  const recChips = document.getElementById('recChips');
+  const recDropdown = document.getElementById('recDropdown');
 
-  if (!questions || questions.length === 0) {
-    recContainer.classList.add('hidden');
+  if (!questions || questions.length === 0 || !recDropdown) {
+    console.log('❌ Suggestions skipped (empty or no dropdown)');
+    if (recContainer) recContainer.classList.add('hidden');
     return;
   }
 
-  recChips.innerHTML = '';
+  // Clear existing options except the first placeholder
+  while (recDropdown.options.length > 1) {
+    recDropdown.remove(1);
+  }
+
   questions.forEach(q => {
-    const chip = document.createElement('div');
-    chip.className = 'rec-chip';
-    chip.textContent = q;
-    chip.addEventListener('click', () => handleRecClick(q));
-    recChips.appendChild(chip);
+    const option = document.createElement('option');
+    option.value = q;
+    option.textContent = q;
+    recDropdown.appendChild(option);
   });
 
   recContainer.classList.remove('hidden');
@@ -910,16 +1080,57 @@ async function renderNotes() {
     return;
   }
 
-  notes.slice().reverse().forEach(note => {
+  notes.slice().reverse().forEach((note, index) => {
+    const actualIndex = notes.length - 1 - index;
     const div = document.createElement('div');
     div.className = 'note-card';
     div.innerHTML = `
-            ${note}
-            <span class="note-date">Saved just now</span>
+            <div class="note-content" id="note-text-${actualIndex}">${note}</div>
+            <div class="note-actions">
+                <button onclick="startEditingNote(${actualIndex})" class="note-btn" title="Edit">✏️</button>
+                <button onclick="deleteNote(${actualIndex})" class="note-btn delete" title="Delete">🗑️</button>
+            </div>
+            <span class="note-date">Saved recently</span>
         `;
     container.appendChild(div);
   });
 }
+
+async function deleteNote(index) {
+  const stored = await chrome.storage.local.get(['memory']);
+  if (stored.memory && stored.memory.notes) {
+    stored.memory.notes.splice(index, 1);
+    await chrome.storage.local.set({ memory: stored.memory });
+    renderNotes();
+  }
+}
+
+function startEditingNote(index) {
+  const textEl = document.getElementById(`note-text-${index}`);
+  const oldText = textEl.textContent;
+  textEl.innerHTML = `
+    <textarea class="edit-note-input" id="edit-input-${index}">${oldText}</textarea>
+    <div class="edit-actions">
+      <button onclick="saveNoteEdit(${index})" class="sm-neon-btn">Save</button>
+      <button onclick="renderNotes()" class="sm-btn">Cancel</button>
+    </div>
+  `;
+}
+
+async function saveNoteEdit(index) {
+  const newText = document.getElementById(`edit-input-${index}`).value;
+  const stored = await chrome.storage.local.get(['memory']);
+  if (stored.memory && stored.memory.notes) {
+    stored.memory.notes[index] = newText;
+    await chrome.storage.local.set({ memory: stored.memory });
+    renderNotes();
+  }
+}
+
+// Attach these to window so onclick works
+window.deleteNote = deleteNote;
+window.startEditingNote = startEditingNote;
+window.saveNoteEdit = saveNoteEdit;
 
 async function clearNotes() {
   if (confirm('Clear all notes?')) {
