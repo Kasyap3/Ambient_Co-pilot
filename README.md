@@ -81,6 +81,7 @@ graph TD
     *   **Entity Vision Ticker**: A real-time data streaming ribbon for instant extraction of critical page metadata and entities.
     *   **Neural Load Monitoring**: A specialized system HUD for real-time tracking of computational resource allocation and tool utilization.
     *   **Dynamic Sentiment Analysis**: A biometric-style "Neural Orb" visualizer that adapts to the qualitative tone of active page content.
+    *   **Autonomous Blueprint Console**: A synthesis-driven workflow discovery engine that proactively identifies multi-step automation sequences (Blueprints) based on page heuristics. Features a real-time progress visualizer for complex "Stage-Gate" executions.
 *   **Contextual Knowledge Base (CRUD)**: A searchable, structured memory repository allowing users to manage, verify, and filter agent context.
 *   **Integrated Audio Interface**: High-fidelity voice input processing with active session state visualization.
 
