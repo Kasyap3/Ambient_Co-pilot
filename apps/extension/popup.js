@@ -102,22 +102,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Check onboarding status
+  // Check onboarding status - DISABLED: API key is in backend .env
   try {
-    const stored = await chrome.storage.local.get(['history', 'memory', 'onboarding_complete']);
-    if (!stored.onboarding_complete) {
-      showOnboarding();
-    } else {
-      showChat();
-      if (stored.history) {
-        conversationHistory = stored.history;
-        renderHistory();
-      }
-      fetchRecommendations();
-      startSuggestionAutoRefresh(); // Start 30s auto-refresh timer
+    const stored = await chrome.storage.local.get(['history', 'memory']);
+    // Always show chat (no onboarding needed)
+    showChat();
+    if (stored.history) {
+      conversationHistory = stored.history;
+      renderHistory();
     }
+    fetchRecommendations();
+    startSuggestionAutoRefresh(); // Start 30s auto-refresh timer
   } catch (e) {
-    console.error('❌ Error in onboarding/history check:', e);
+    console.error('❌ Error in history check:', e);
   }
 
   // Initialize secondary features
@@ -226,6 +223,9 @@ function injectFormBlueprint() {
 async function executeFormBlueprint() {
   const hub = document.getElementById('actionHub');
   const btn = document.getElementById('hubExecuteBtn');
+  const blueprintNode = document.getElementById('blueprintNode');
+  const blueprintStatus = document.getElementById('blueprintStatus');
+
   btn.disabled = true;
   btn.textContent = 'RUNNING';
 
@@ -236,10 +236,24 @@ async function executeFormBlueprint() {
   });
 
   setTimeout(() => {
+    // Hide action hub
     hub.classList.add('hidden');
     btn.disabled = false;
     btn.textContent = 'RUN';
-    addMessage("✅ Rapid Form Entry sequence complete.", 'assistant');
+
+    // Show success message in chat
+    addMessage("✅ Successfully executed blueprint: **Standard Development Overview**", 'assistant');
+
+    // Reset workflow console to search mode
+    if (blueprintNode) {
+      blueprintNode.className = 'blueprint-node empty';
+      blueprintNode.innerHTML = '<div class="node-placeholder">Waiting for page analysis...</div>';
+    }
+    if (blueprintStatus) {
+      blueprintStatus.textContent = 'Synthesizing...';
+    }
+
+    // Clear action badge from orb
     const orb = document.getElementById('vibeOrb');
     if (orb) orb.classList.remove('action-detected');
   }, 2000);
