@@ -27,19 +27,37 @@ Respond ONLY with valid JSON in this exact format:
   "intent": "book_flight", "draft_email", "save_note", "scroll_to", "highlight_fact" etc.,
   "entities": {
     "origin": "NYC",
-    "target_text": "Pricing" (for navigation),
-    "highlight_snippet": "The total is $500",
-    "scroll_direction": "down" or "up" or null,
+    "target_text": "Pricing",
+    "highlight_snippet": "Actual text to highlight",
+    "scroll_direction": "down" or "up",
     "email_recipient": "boss@example.com",
-    "note_content": "The camera costs $500...",
+    "note_content": "Note content",
     "other": {}
   },
-  "url": "full URL to open (including mailto:)" or null,
+  "url": "full URL" or null,
   "simple_message": "brief opening message",
-  "proactive_message": "detailed contextual message for floating assistant"
+  "proactive_message": "detailed message"
 }
 
+Be smart about:
+- If user input says "Explain this context: '...'", treat it as a "highlight_text" action.
+- Extract the snippet from between the quotes to highlight.
+
 Examples:
+
+User: "Explain this context: 'The total is $500'"
+Response:
+{
+  "action_detected": true,
+  "action_type": "highlight_text",
+  "intent": "highlight_fact",
+  "entities": {
+    "highlight_snippet": "The total is $500"
+  },
+  "url": null,
+  "simple_message": "Analyzing the selection...",
+  "proactive_message": "I'm highlighting that section for you while I explain it! ✨"
+}
 
 User: "Take me to the pricing section"
 Response:
@@ -53,7 +71,7 @@ Response:
   },
   "url": null,
   "simple_message": "Scrolling to pricing...",
-  "proactive_message": "I'm scrolling down to find the Pricing section for you! 🖱️"
+  "proactive_message": "I'm scrolling down to find the Pricing section! 🖱️"
 }
 
 User: "Save a note that this laptop is $999"
@@ -63,192 +81,19 @@ Response:
   "action_type": "save_note",
   "intent": "save_note",
   "entities": {
-    "note_content": "Laptop price: $999 (from [Current Page Title])",
-    "other": {}
+    "note_content": "Laptop price: $999"
   },
   "url": null,
   "simple_message": "Saving note...",
   "proactive_message": "I've saved that to your memory bank! 🧠"
-User: "Explain this section"
-Context: Selected text "The quick brown fox..."
-Response:
-{
-  "action_detected": true,
-  "action_type": "highlight_text",
-  "intent": "highlight_fact",
-  "entities": {
-    "highlight_snippet": "The quick brown fox",
-    "other": {}
-  },
-  "url": null,
-  "simple_message": "Analyzing the selection...",
-  "proactive_message": "I'm highlighting the section you're interested in! ✨"
 }
+"""
 
-Examples:
-
-User: "Email this summary to my boss at boss@company.com"
-Current Page Content: [Summary of camera prices...]
-Response:
-{
-  "action_detected": true,
-  "action_type": "open_url",
-  "intent": "draft_email",
-  "entities": {
-    "email_recipient": "boss@company.com",
-    "email_subject": "Summary of Camera Prices",
-    "email_body": "Hi,\n\nHere is the summary of the camera prices you asked for:\n\n[...summary content...]\n\nBest,\n[User]",
-    "other": {}
-  },
-  "url": "mailto:boss@company.com?subject=Summary%20of%20Camera%20Prices&body=Hi%2C%0A%0AHere%20is%20the%20summary...",
-  "simple_message": "Drafting email to your boss...",
-  "proactive_message": "I've opened your mail app with a draft summary of the camera prices! 📧\\n\\nYou can edit it before sending."
-}
-
-User: "Can you open Google Flights?"
-Previous: User discussed NYC to SFO, Jan 12-Feb 12, $1000 budget
-Response:
-{
-  "action_detected": true,
-  "action_type": "open_url",
-  "intent": "book_flight",
-  "entities": {
-    "origin": "NYC",
-    "destination": "SFO",
-    "dates": "January 12 to February 12",
-    "budget": "$1000",
-    "other": {}
-  },
-  "url": "https://www.google.com/flights?hl=en#flt=NYC.SFO",
-  "simple_message": "Opening Google Flights for you...",
-  "proactive_message": "I've opened Google Flights for you! 🛫\\n\\nI can see from our conversation you want to fly from NYC to SFO around January 12 to February 12 with a budget of $1000.\\n\\nLet me check what details are needed on this page... What dates work best for you?"
-}
-
-User: "Show me hotels in SF"
-Response:
-{
-  "action_detected": true,
-  "action_type": "open_url",
-  "intent": "book_hotel",
-  "entities": {
-    "destination": "San Francisco",
-    "other": {}
-  },
-  "url": "https://www.airbnb.com/s/San-Francisco",
-  "simple_message": "Opening Airbnb for San Francisco...",
-  "proactive_message": "I've opened Airbnb for San Francisco! 🏠\\n\\nWould you like me to help you fill in check-in dates and guest details?"
-}
-
-User: "What's the weather like today?"
-Response:
-{
-  "action_detected": false,
-  "action_type": null,
-  "intent": null,
-  "entities": {},
-  "url": null,
-  "simple_message": null,
-  "proactive_message": null
-}
-
-Be smart about extracting context from conversation history!"""
-
-
-def detect_action_with_llm(user_input: str, context: dict) -> dict:
-    """
-    Use LLM to detect intent and extract entities
-    Much more robust than regex
-    """
-    
-    # Build context for LLM
-    conversation_history = context.get('conversation_history', [])
-    memory = context.get('memory', {})
-    preferences = []
-    if hasattr(memory, 'preferences'):
-        preferences = memory.preferences
-    elif isinstance(memory, dict):
-        preferences = memory.get('preferences', [])
-    
-    # Format conversation history
-    history_text = ""
-    for msg in conversation_history[-5:]:  # Last 5 messages
-        if hasattr(msg, 'role') and hasattr(msg, 'content'):
-            role = msg.role
-            content = msg.content
-        elif isinstance(msg, dict):
-            role = msg.get('role', 'user')
-            content = msg.get('content', '')
-        else:
-            role = 'user'
-            content = str(msg)
-        history_text += f"{role.upper()}: {content}\\n"
-    
-    # Build the analysis prompt
-    analysis_prompt = f"""Current user input: "{user_input}"
-
-Recent conversation:
-{history_text}
-
-User preferences: {', '.join(preferences) if preferences else 'None'}
-
-Analyze this input and determine if the user wants to take an action. Extract all relevant entities from the current input AND conversation history."""
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": analysis_prompt}
-            ],
-            temperature=0.3,  # Lower temperature for more consistent JSON
-            max_tokens=500
-        )
-        
-        result_text = response.choices[0].message.content.strip()
-        
-        # Parse JSON response
-        # Remove markdown code blocks if present
-        if result_text.startswith('```'):
-            result_text = result_text.split('```')[1]
-            if result_text.startswith('json'):
-                result_text = result_text[4:]
-            result_text = result_text.strip()
-        
-        result = json.loads(result_text)
-        
-        # If action detected, enhance with preferences
-        if result.get('action_detected'):
-            result = enhance_with_preferences(result, preferences)
-            print(f"✅ Action detected: {result['intent']}")
-            print(f"📍 Entities: {result['entities']}")
-            print(f"🔗 URL: {result['url']}")
-        else:
-            print("❌ No action detected")
-        
-        return result
-        
-    except json.JSONDecodeError as e:
-        print(f"❌ JSON parse error: {e}")
-        print(f"Response was: {result_text}")
-        return None
-    except Exception as e:
-        print(f"❌ Error in LLM action detection: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-def enhance_with_preferences(result: dict, preferences: list) -> dict:
-    """
-    Enhance proactive message with user preferences
-    """
-    if not preferences:
-        return result
-    
+def enhance_with_preferences(result, preferences):
+    """Add proactive personality based on preferences"""
     proactive = result.get('proactive_message', '')
     
-    # Add preference-based suggestions
-    if 'budget' in preferences and result.get('intent') in ['book_flight', 'book_hotel']:
+    if 'budget' in preferences and result.get('intent') == 'book_flight':
         proactive += "\\n\\n💰 I remember you prefer budget options, so I'll help you find the best deals!"
     
     if 'nature' in preferences and result.get('intent') == 'book_hotel':
@@ -257,17 +102,50 @@ def enhance_with_preferences(result: dict, preferences: list) -> dict:
     result['proactive_message'] = proactive
     return result
 
+def detect_action_with_llm(user_input: str, context: dict) -> dict:
+    """Use LLM to detect intent and extract entities"""
+    conversation_history = context.get('conversation_history', [])
+    memory = context.get('memory', {})
+    preferences = memory.get('preferences', []) if isinstance(memory, dict) else []
+    
+    history_text = ""
+    for msg in conversation_history[-5:]:
+        role = msg.get('role', 'user') if isinstance(msg, dict) else 'user'
+        content = msg.get('content', str(msg)) if isinstance(msg, dict) else str(msg)
+        history_text += f"{role.upper()}: {content}\\n"
+    
+    analysis_prompt = f"Current user input: \"{user_input}\"\\n\\nRecent conversation:\\n{history_text}\\n\\nUser preferences: {', '.join(preferences)}\\n\\nAnalyze this input and detect actions."
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": analysis_prompt}
+            ],
+            temperature=0,
+            max_tokens=500
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        if '```' in result_text:
+            result_text = result_text.split('```')[1]
+            if result_text.startswith('json'): result_text = result_text[4:]
+            result_text = result_text.strip()
+            
+        result = json.loads(result_text)
+        if result.get('action_detected'):
+            result = enhance_with_preferences(result, preferences)
+            print(f"✅ Action: {result['intent']}")
+        return result
+    except Exception as e:
+        print(f"❌ Detection Error: {e}")
+        return {"action_detected": false}
 
 def detect_action(user_input: str, context: dict) -> dict:
-    """
-    Main entry point - uses LLM for robust detection
-    """
-    
-    # Try LLM-based detection
+    """Main entry point"""
     result = detect_action_with_llm(user_input, context)
-    
     if result and result.get('action_detected'):
-        # Convert LLM result to expected format
         return {
             'action_type': result.get('action_type'),
             'url': result.get('url'),
@@ -276,6 +154,4 @@ def detect_action(user_input: str, context: dict) -> dict:
             'intent': result.get('intent'),
             'entities': result.get('entities')
         }
-    
-    # No action detected
     return None
