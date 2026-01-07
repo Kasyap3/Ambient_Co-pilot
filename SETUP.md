@@ -41,12 +41,20 @@ python app.py
 
 You should see:
 ```
+============================================================
 🤖 Ambient Copilot Backend Starting...
+============================================================
 📍 Server: http://localhost:8000
+📄 Docs: http://localhost:8000/docs
 🔑 API Key: ✅ Configured
+============================================================
+INFO:     Started server process [XXXXX]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
-**Keep this terminal open!**
+**Keep this terminal open!** The extension communicates with the backend at `http://127.0.0.1:8000`.
 
 ### Step 3: Load Chrome Extension
 
@@ -56,8 +64,19 @@ You should see:
 4. Click "Load unpacked"
 5. Select the `apps/extension` folder from this project
 6. You should see "Ambient Copilot" extension added
+7. **CRITICAL**: After loading or reloading the extension, you MUST hard refresh any open tabs where you want to use it:
+   - Press **Cmd+Shift+R** (Mac) or **Ctrl+Shift+R** (Windows/Linux)
+   - This ensures the content script loads properly
 
-### Step 4: Add Icons (Optional)
+### Step 4: Verify Content Script Loading
+
+1. Open any webpage (e.g., https://example.com)
+2. Press **F12** to open Developer Tools
+3. Go to the **Console** tab
+4. You should see: `🚀 CONTENT.JS LOADED on: https://...`
+5. If you DON'T see this message, hard refresh the page (Cmd+Shift+R)
+
+### Step 5: Add Icons (Optional)
 
 The extension needs icons. You can:
 
@@ -92,14 +111,31 @@ Should return:
 {"status": "Ambient Copilot Backend Running", ...}
 ```
 
-### Test 2: Extension Connection
+### Test 2: Extension Connection & Smart Explain
 
-1. Visit any website (e.g., Wikipedia, Airbnb)
-2. Click the Ambient Copilot extension icon
-3. Type: "What is this page about?"
-4. Should get a relevant response
+1. Visit any website with text content (e.g., Wikipedia, news article)
+2. Click the Ambient Copilot extension icon (sidebar should open)
+3. **Test Chat**: Type "What is this page about?" and click Send
+   - Should get a concise response (max 70 words)
+4. **Test Smart Explain**: 
+   - Select at least 5 characters of text on the page
+   - A blue "✨ Explain" button should appear near your selection
+   - Click the button
+   - The sidebar should open with `Explain this context: "your selected text"` pre-filled
+   - Click Send to get an explanation
+5. **Test Dynamic Suggestions**:
+   - After sending a message, notice the "Choose a follow-up..." dropdown
+   - Suggestions update automatically every 30 seconds
 
-### Test 3: Voice Input
+### Test 3: Notes Feature
+
+1. In the sidebar, switch to the "Notes" tab
+2. Send a message with important information
+3. The AI may suggest saving it as a note
+4. Notes are automatically anchored to the current website
+5. Check `data/notes.txt` to see backend persistence
+
+### Test 4: Voice Input
 
 1. Click the 🎤 button
 2. Allow microphone permission if prompted

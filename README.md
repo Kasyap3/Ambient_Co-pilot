@@ -137,6 +137,55 @@ graph TD
 ### 3. Usage
 
 1.  Ensure the backend server is running.
-2.  Click the extension icon to open the interface.
-3.  Complete the initial onboarding setup.
-4.  Navigate to any webpage to begin using Agentic RAG features or Voice Commands.
+2.  Click the extension icon to open the sidebar interface.
+3.  Complete the initial onboarding setup if prompted.
+4.  Navigate to any webpage to begin using features:
+    *   **Smart Explain**: Select text and click the "✨ Explain" button to get contextual explanations
+    *   **Chat**: Ask questions about the current page or general topics (responses limited to 70 words for clarity)
+    *   **Notes**: Save important insights with automatic site anchoring
+    *   **Dynamic Suggestions**: Get contextually relevant follow-up questions that update every 30 seconds
+
+## Technical Stack
+
+### Frontend (Chrome Extension)
+- **Manifest V3**: Modern Chrome extension architecture
+- **Vanilla JavaScript**: No framework dependencies for maximum performance
+- **Content Scripts**: DOM manipulation and selection detection
+- **Background Service Worker**: Message relay and state management
+- **Side Panel API**: Native Chrome sidebar integration
+
+### Backend (Python FastAPI)
+- **FastAPI**: High-performance async API framework
+- **OpenAI GPT-4o-mini**: LLM for conversational intelligence and action detection
+- **Pydantic**: Data validation and serialization
+- **CORS**: Enabled for localhost extension communication (127.0.0.1:8000)
+- **Uvicorn**: ASGI server for production-grade performance
+
+### Key Features Implementation
+- **Smart Explain**: Text selection → Content script → Background relay → Sidebar population (manual send)
+- **Action Detection**: LLM-powered intent classification (`actions.py`) for `highlight_text`, `save_note`, `navigate_page`
+- **Memory Management**: Unified Pydantic models for preferences and rich note objects (with URLs, timestamps)
+- **Dynamic Suggestions**: Auto-refresh every 30 seconds + after each message for contextual relevance
+- **Response Optimization**: 70-word limit with 150 max_tokens for concise, focused answers
+
+## Future Scope
+
+The roadmap for Ambient Copilot focuses on evolving from a reactive assistant to a proactive agentic operating system:
+
+1. **Comet Integration**: Implement [Comet](https://github.com/comet-ml/comet-ml) for experiment tracking and model versioning. This will enable A/B testing of different LLM prompts, action detection strategies, and UI patterns, with automated performance metrics collection across user sessions.
+
+2. **Agentic OS Architecture**: Transform the current request-response model into a persistent agentic runtime. The system will maintain continuous background processes that monitor user behavior, predict intent before explicit commands, and autonomously execute multi-step workflows (e.g., "book cheapest flight to NYC next week" → search → compare → fill forms → confirm).
+
+3. **Advanced State Space Management**: Implement a hierarchical state machine using [XState](https://xstate.js.org/) or similar framework to manage complex agent states (idle → observing → planning → executing → verifying). This will enable rollback capabilities, state persistence across sessions, and deterministic behavior debugging.
+
+4. **Workflow Automation Engine**: Build a visual workflow designer where users can create, share, and execute complex automation sequences. Leverage LLM-powered "learning by demonstration" where the agent observes user actions 3-5 times and automatically generates reusable automation scripts with parameterized inputs.
+
+5. **Federated Learning & Privacy-First Intelligence**: Implement on-device model fine-tuning using techniques like [LoRA](https://arxiv.org/abs/2106.09685) to personalize the agent's behavior without sending private data to external servers. User interactions will continuously refine local adapter weights, creating a truly personalized assistant that respects data sovereignty.
+
+## Contributing
+
+Contributions are welcome! Please ensure all code follows the existing architecture patterns and includes appropriate error handling and logging.
+
+## License
+
+This project is licensed under the MIT License.
